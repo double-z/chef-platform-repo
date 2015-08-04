@@ -1,0 +1,7 @@
+name 'chef-platform-install'
+maintainer 'Zack Zondlo'
+maintainer_email 'zzondlo@chef.io'
+license 'all_rights'
+description 'Installs/Configures chef-platform-install'
+long_description 'Installs/Configures chef-platform-install'
+version '0.1.0'
