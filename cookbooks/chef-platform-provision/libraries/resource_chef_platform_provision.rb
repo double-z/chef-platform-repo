@@ -27,8 +27,6 @@ class Chef
   class Resource
     class ChefPlatformProvision < Chef::Resource::LWRPBase
 
-
-
       self.resource_name = 'chef_platform_provision'
 
       def initialize(*args)

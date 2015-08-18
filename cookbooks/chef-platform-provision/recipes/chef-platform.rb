@@ -20,9 +20,9 @@ require 'awesome_print'
 # end
 
 chef_platform_provision "prod" do
-  action :allocate
+  action :ready
   platform_data node['chef_platform']
-  log_all true
+  # log_all true
 end
 
 

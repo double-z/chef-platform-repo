@@ -1,5 +1,6 @@
 require 'cheffish'
 require 'chef/provisioning'
+require 'chef/provisioning/vagrant_driver'
 require 'chef/provider/lwrp_base'
 require 'chef/provider/chef_node'
 # require 'chef/knife/node_presenter'
@@ -12,7 +13,7 @@ require "awesome_print"
 class Chef
   class Provider
     class ChefPlatformProvision < Chef::Provider::LWRPBase
-      # use_inline_resources if defined?(use_inline_resources)
+      # use_inline_resources # if defined?(use_inline_resources)
 
       def whyrun_supported?
         true
@@ -21,90 +22,10 @@ class Chef
       def action_handler
         @action_handler ||= Chef::Provisioning::ChefProviderActionHandler.new(self)
       end
+
       def action_handler=(value)
         @action_handler = value
       end
-
-      def old_allocate
-
-        # puts "MACINE_OPTS"
-        # puts "MACINE_OPTS"
-        # puts "MACINE_OPTS"
-        # puts "MACINE_OPTS"
-        # # topo_chef.merged_topology.each do |nodename, config|
-        # #   puts "NODENAME: #{nodename}"
-        # #   # pp config.to_yaml
-
-        # #   file "#{Chef::Config[:chef_repo_path]}/#{nodename}_machine_options_config.yml" do
-        # #     content config.to_yaml
-        # #     action :create
-        # #   end
-        # # #   # pp opts.to_yaml
-        # # pp platform_attrs
-        # #   opts = {}
-        # #   opts[nodename] = machine_options_for_provider(nodename, config)
-        # #   file "#{Chef::Config[:chef_repo_path]}/#{nodename}_machine_options.yml" do
-        # #     content opts.to_yaml
-        # #     action :create
-        # #   end
-        # omnibus = new_resource.merged_platform_data.to_hash # JSON.parse(::File.read(::File.join(Chef::Config[:chef_repo_path], 'omnibus_private_chef.rb')))
-        # file "#{Chef::Config[:chef_repo_path]}/policy_attributes.yml" do
-        #   content omnibus.to_yaml
-        #   action :create
-        # end
-        # # pp "MACHINE_OPtiONS FOR #{nodename}"
-        # # pp "MACHINE_OPtiONS FOR #{nodename}"
-        # # pp "MACHINE_OPtiONS FOR #{nodename}"
-        # # end
-        # puts "MACINE_OPTS"
-        # puts "MACINE_OPTS"
-        # puts "MACINE_OPTS"
-        # # datahash = new_platform_spec.data
-        # # puts datahash.class
-
-        # # registry_data_json = JSON.parse(datahash.to_json)
-        # # puts registry_data_json.class
-        # # puts "JSON"
-        # # puts "JSON"
-
-        # # file "#{Chef::Config[:chef_repo_path]}/attrsout.json" do
-        # #   content JSON.pretty_generate(registry_data_json)
-        # #   action :create
-        # # end
-
-
-        # # registry_data_json = JSON.parse(datahash.to_json)
-        # # file "#{Chef::Config[:chef_repo_path]}/attrsout.json" do
-        # #   content JSON.pretty_generate(registry_data_json)
-        # #   action :create
-        # # end
-        # # puts "JSON"
-        # # puts "JSON"
-        # # puts "JSON"
-        # # pp ::JSON.pretty_generate(registry_data_json)
-        # # puts "JSON"
-        # # puts "JSON"
-        # # # puts datahash.class
-        # # puts "JSON"
-
-        # # machine_batch 'allocate_all' do
-        # #   action [:allocate]
-        # #   # Base install on all
-        # #   topo_chef.merged_topology.each do |nodename, config|
-        # #     machine nodename do
-        # #       machine_options machine_options_for_provider(nodename, config)
-        # #       attribute 'private-chef', private_chef_attrs
-        # #       attribute 'root_ssh', platform_ssh_keys
-        # #       attribute 'osc-install', osc_install?
-        # #       attribute 'osc-upgrade', osc_upgrade?
-        # #       attributes harness_attrs
-        # #     end
-        # #   end
-        # #   only_if { new_node?(nodename) }
-        # # end
-      end
-
-
 
       # Register What platfrom_spec data we have at this point.
       # This will be used by the the ready action to determine state.
@@ -115,46 +36,81 @@ class Chef
       end
 
       action :ready do
-        #        if (!platform_spec.ready? ||
+        # action_allocate if (!platform_spec.ready? ||
         #            platform_spec.toplology_changed? ||
         #            platform_spec.base_updated?)
-        # action_allocate
+        # 
         #
 
-        platform_spec.all_nodes.each do |server|
-          ruby_block "ready_action_for_#{server['node_name']}" do
-            block do
-              puts "machine_batch batch_do_ready do"
-              # platform_spec.all_nodes.each do |server|
-              puts "  machine ready_#{server['node_name']} do"
-              puts "    machine_options machine_options_for(#{server})"
-              puts "    notifies :restart, 'service[name]', :immediately"
-              puts "    notifies :restart, 'service[name]', :immediately"
-              puts "    notifies :restart, 'service[name]', :immediately"
-              puts "  end"
-              puts "end"
+        b = machine_batch 'ready_all' do
+          action :converge
+          # action :ready
+          # action :allocate
+          # action :destroy
+          new_platform_spec.all_nodes.each do |server|
+            machine server['node_name'] do
+              driver "vagrant"
+              machine_options vagrant_machine_opts_for(server)
+              converge true
             end
-            # not_if do
-            #   should_run_ready(server)
-            # end
           end
+          notifies :run, 'ruby_block[ready_action_for]', :immediately
         end
 
+        ruby_block "ready_action_for" do
+          block do
+            node_data = []
+            b.machines.each do |bm|
+              node_driver = Chef::Provider::ChefNode.new(bm, run_context)
+              node_driver.load_current_resource
+              json = node_driver.new_json
+
+              if (json["automatic"] &&
+                  json["automatic"]["network"] &&
+                  json["automatic"]["network"]["interfaces"])
+
+                new_platform_spec.all_nodes.each do |_server|
+                  server = ::Provisioner.deep_hashify(_server)
+                  puts "IF:"
+                  apd("server", server)
+                  puts server["interface"]
+                  # server.each do |kk, vv|
+                  #   puts "kk =#{kk} vv=#{vv}"
+                  # end
+                  puts "IF:"
+                  puts "json['automatic']['network']['interfaces'][#{server['interface']}]['addresses']" #.each do |k,v|
+                  json["automatic"]["network"]["interfaces"]["eth1"]["addresses"].each do |k,v|
+                    if (bm.name == server['node_name'])
+                      new_data = ::Provisioner.deep_hashify(server)
+                      new_data['ipaddress'] = k.to_s if (v["family"] == "inet") # ||
+                      node_data << new_data if new_data['ipaddress']
+                    end
+                  end
+                end
+
+              end
+
+            end
+            new_platform_spec.nodes = node_data
+            new_platform_spec.save_data_bag(action_handler)
+            apd("node_data", new_platform_spec.all_nodes)
+          end
+          action :nothing
+          notifies :bootstrap, "chef_platform_provision[prod]", :immediately
+        end
       end
 
       action :bootstrap do
-        action_ready # if !platform_spec.all_nodes_ready? # Check If All Nodes Have IP
         ruby_block 'bootstrap_action' do
           block do
-            puts "  machine #{platform_spec.chef_server_bootstrap_backend['node_name']} do"
-            puts "    machine_options machine_options_for(#{platform_spec.chef_server_bootstrap_backend})"
-            puts "    notifies :restart, 'service[name]', :immediately"
-            puts "    notifies :restart, 'service[name]', :immediately"
-            puts "    notifies :restart, 'service[name]', :immediately"
-            puts "  end"
-            puts "end"
+            current_platform_spec.all_nodes.each do |server|
+              puts "  machine #{server['node_name']} do"
+              puts "    machine_options machine_options_for(#{apl(vagrant_machine_opts_for(server))})"
+              puts "  end"
+              puts "end"
+            end
           end
-          action :nothing
+          action :run
         end
       end
 
@@ -170,9 +126,10 @@ class Chef
         action_allocate
       end
 
-      # def sync_node_ips(server)
-      #   new_platform_spec.ip_for_node = current_platform_spec.ip_for_node
-      # end
+      def vagrant_machine_opts_for(server)
+        machine_ops = ::VagrantConfigHelper.generate_config(server)
+        machine_ops
+      end
 
       def machine_options_for(server)
         configs = []
@@ -226,11 +183,12 @@ class Chef
         @new_platform_spec = Provisioner::ChefPlatformSpec.new_spec(new_resource.platform_data)
         @current_platform_spec = Provisioner::ChefPlatformSpec.current_spec(new_resource.policy_group)
         log_all_data if new_resource.log_all
+        # pp run_context.resource_collection.inspect
         # apd("current_platform_nodes", @current_platform_spec.all_nodes)
         # apd("new_platform_nodes", @new_platform_spec.all_nodes)
         apd("current_platform_nodes", @current_platform_spec.get)
         apd("new_platform_nodes", @new_platform_spec.get)
-         new_platform_spec.save_data_bag(action_handler) # if nodes_updated?
+        new_platform_spec.save_data_bag(action_handler) # if nodes_updated?
       end
 
       ####
@@ -402,29 +360,6 @@ class Chef
             puts "#{server['node_name']} NOT Delivery Build #{server['node_name']}"
           end
         end
-
-        # if nodes_updated?
-        #   puts "UPDATED"
-        # else
-        #   puts "NOT UPDATED"
-        # end
-
-        # platform_spec.save_data_bag(action_handler)
-        # platform_attrs.each do |k,v|
-        #   puts k
-        # end
-
-        # pp run_context.cheffish.inspect
-        # pp run_context.node[:name]
-        # run_context.resource_collection.each do |k,v|
-        #   puts k
-        # end
-        # node_driver = Chef::Provider::ChefNode.new(new_resource, run_context)
-        # node_driver.load_current_resource
-        # json = node_driver.new_json
-        # json['normal']['chef_provisioning'] = node_driver.current_json['normal']['chef_provisioning'] || {}
-        # json['normal']['chef_provisioning']['provisioner'] ||= {}
-        # json['normal']['chef_provisioning']['provisioner'] = new_resource.platform_attributes
       end
 
       def apd(name, data)
@@ -457,84 +392,6 @@ class Chef
         puts "TEST IF: #{name}"
         puts
       end
-
-      # def chef_platform_spec
-      #   @chef_platform_spec ||= Provisioner.chef_platform_spec(new_resource.chef_server)
-      # end
-
-      # def role_machine_options(server)
-      #   false
-      # end
-
-      # def topo_chef
-      #   @topo_chef ||= ::TopoHelper.new(ec_config: platform_topology, include_layers: use_ec_layers)
-      # end
-
-      # def ecm_top
-      #   topo_chef
-      # end
-
-      # def entry_store_name(policy_group = new_resource.policy_group)
-      #   @entry_store_name ||= "#{policy_group}_chef_platform"
-      # end
-
-      # def private_chef_attrs
-      #   platform_attrs['private-chef']
-      # end
-
-      # def analytics_attrs
-      #   platform_attrs['analytics']
-      # end
-
-      # def platform_ssh_keys
-      #   platform_attrs['root_ssh']
-      # end
-
-      # def osc_install?
-      #   platform_attrs['osc-install']
-      # end
-
-      # def osc_upgrade?
-      #   platform_attrs['osc-upgrade']
-      # end
-
-      # def cloud_attrs
-      #   platform_attrs['cloud']
-      # end
-
-      # def provisioning_driver
-      #   cloud_attrs['provider']
-      # end
-
-      # def harness_attrs
-      #   platform_attrs['harness']
-      # end
-
-      # def platform_topology
-      #   harness_attrs['vm_config']
-      # end
-
-      # def use_ec_layers
-      #   %w(frontends backends standalones)
-      # end
-
-      # def machine_options_for_provider(nodename, config)
-      #   case provisioning_driver
-      #   when 'ec2'
-      #     ::Ec2ConfigHelper.generate_config(nodename, config, platform_attrs)
-      #   when 'vagrant'
-      #     pp
-      #     machine_ops = ::VagrantConfigHelper.generate_config(nodename, config, platform_attrs)
-      #     puts "vagrant_machine_opts"
-      #     puts "vagrant_machine_opts"
-      #     pp machine_ops
-      #     puts "vagrant_machine_opts"
-      #     puts "vagrant_machine_opts"
-      #     machine_ops
-      #   else
-      #     raise "No provider set!"
-      #   end
-      # end
 
     end
   end

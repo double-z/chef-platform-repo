@@ -32,11 +32,18 @@ default['chef_platform']['nodes'] = [
     "node_name" => "backend1",
     "service" => "chef_server",
     "fqdn" =>"backend1.ubuntu.vagrant",
-    "interface" => "eth1",
     "machine_options_ipaddress" => "33.33.33.20",
     "role" => "backend",
     "bootstrap" => true
   },
+  {
+    "node_name" => "backend2",
+    "service" => "chef_server",
+    "fqdn" => "backend1.ubuntu.vagrant",
+    "ipaddress" => "eth1",
+    "machine_options_ipaddress" => "33.33.33.21",
+    "role" => "backend",
+    "bootstrap" => false  },
   {
     "node_name" => "frontend1",
     "service" => "chef_server",
@@ -47,12 +54,75 @@ default['chef_platform']['nodes'] = [
     "bootstrap" => false
   },
   {
+    "node_name" => "frontend2",
+    "service" => "chef_server",
+    "fqdn" => "frontend2.ubuntu.vagrant",
+    "interface" => "eth1",
+    "machine_options_ipaddress" => "33.33.33.23",
+    "role" => "frontend",
+    "bootstrap" => false
+  },
+  {
+    "node_name" => "frontend3",
+    "service" => "chef_server",
+    "fqdn" => "frontend3.ubuntu.vagrant",
+    "interface" => "eth1",
+    "machine_options_ipaddress" => "33.33.33.24",
+    "role" => "frontend",
+    "bootstrap" => false
+  },
+  {
     "node_name" => "analytics1",
     "service" => "analytics",
     "fqdn" => "analytics.ubuntu.vagrant",
     "interface" => "eth1",
     "machine_options_ipaddress" => "33.33.33.25",
     "role" => "analytics",
+    "bootstrap" => false
+  },
+  {
+    "node_name" => "supermarket1",
+    "service" => "supermarket",
+    "fqdn" => "supermarket.ubuntu.vagrant",
+    "interface" => "eth1",
+    "machine_options_ipaddress" => "33.33.33.26",
+    "role" => "supermarket",
+    "bootstrap" => false
+  },
+  {
+    "node_name" => "delivery-server1",
+    "service" => "delivery",
+    "fqdn" => "delivery-server1.ubuntu.vagrant",
+    "interface" => "eth1",
+    "machine_options_ipaddress" => "33.33.33.27",
+    "role" => "delivery_server",
+    "bootstrap" => false
+  },
+  {
+    "node_name" => "delivery-build1",
+    "service" => "delivery",
+    "fqdn" => "delivery-build1.ubuntu.vagrant",
+    "interface" => "eth1",
+    "machine_options_ipaddress" => "33.33.33.28",
+    "role" => "delivery_build",
+    "bootstrap" => false
+  },
+  {
+    "node_name" => "delivery-build2",
+    "service" => "delivery",
+    "fqdn" => "delivery-build2.ubuntu.vagrant",
+    "interface" => "eth1",
+    "machine_options_ipaddress" => "33.33.33.29",
+    "role" => "delivery_build",
+    "bootstrap" => false
+  },
+  {
+    "node_name" => "delivery-build3",
+    "service" => "delivery",
+    "fqdn" => "delivery-build3.ubuntu.vagrant",
+    "interface" => "eth1",
+    "machine_options_ipaddress" => "33.33.33.30",
+    "role" => "delivery_build",
     "bootstrap" => false
   }
 ]
@@ -353,16 +423,16 @@ default['chef_platform']['nodes'] = [
 
 
 # server = [
-#   {
-#     "fqdn" => "",
-#     "role" => "",
-#     "" => "",
-#     "" => "",
-#     "" => "",
-#     "" => "",
-#     "" => "",
-#     "" => "",
-#     "" => ""
-#   }
+# 	{
+# 		"fqdn" => "",
+# 		"role" => "",
+# 		"" => "",
+# 		"" => "",
+# 		"" => "",
+# 		"" => "",
+# 		"" => "",
+# 		"" => "",
+# 		"" => ""
+# 	}
 # ]
 # default['chef_platform'].tap do |chef_platform|

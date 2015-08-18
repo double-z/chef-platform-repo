@@ -1,73 +1,32 @@
 {
   "id": "chef_platform",
   "chef_server": {
-    "api_fqdn": "js4",
     "version": "latest",
-    "prereleases": false,
-    "nightlies": false,
-    "package_file": null,
-    "package_checksum": null,
-    "machine_options": {
-      "vagrant_config": {
-        "machine": "chef_server"
-      }
-    },
+    "api_fqdn": "js4",
     "configuration": {
 
     }
   },
   "driver": {
-    "name": "vagrant",
-    "machine_options": {
-      "vagrant_config": {
-        "machine": "driver"
-      }
-    }
+    "name": "vagrant"
   },
   "analytics": {
     "version": "latest",
-    "prereleases": false,
-    "nightlies": false,
-    "package_file": null,
-    "package_checksum": null,
     "api_fqdn": "js4",
-    "machine_options": {
-      "vagrant_config": {
-        "machine": "analytics"
-      }
-    },
     "configuration": {
 
     }
   },
   "supermarket": {
     "version": "latest",
-    "prereleases": false,
-    "nightlies": false,
-    "package_file": null,
-    "package_checksum": null,
     "api_fqdn": "js4",
-    "machine_options": {
-      "vagrant_config": {
-        "machine": "supermarket"
-      }
-    },
     "configuration": {
 
     }
   },
   "delivery": {
     "version": "latest",
-    "prereleases": false,
-    "nightlies": false,
-    "package_file": null,
-    "package_checksum": null,
     "api_fqdn": "js4",
-    "machine_options": {
-      "vagrant_config": {
-        "machine": "delivery"
-      }
-    },
     "configuration": {
 
     }
@@ -77,146 +36,28 @@
       "node_name": "backend1",
       "service": "chef_server",
       "fqdn": "backend1.ubuntu.vagrant",
-      "ipaddress": "33.33.33.21",
-      "cluster_ipaddress": "33.33.34.5",
+      "interface": "eth1",
+      "machine_options_ipaddress": "33.33.33.20",
       "role": "backend",
-      "bootstrap": true,
-      "machine_options": {
-        "vagrant_config": {
-          "machine": "centos6"
-        }
-      }
-    },
-    {
-      "node_name": "backend2",
-      "service": "chef_server",
-      "fqdn": "backend1.ubuntu.vagrant",
-      "ipaddress": "33.33.33.31",
-      "cluster_ipaddress": "33.33.34.4",
-      "role": "backend",
-      "bootstrap": false,
-      "machine_options": {
-        "vagrant_config": {
-          "machine": "centos6"
-        }
-      }
+      "bootstrap": true
     },
     {
       "node_name": "frontend1",
       "service": "chef_server",
       "fqdn": "frontend1.ubuntu.vagrant",
-      "ipaddress": "33.33.33.22",
+      "interface": "eth1",
+      "machine_options_ipaddress": "33.33.33.22",
       "role": "frontend",
-      "bootstrap": false,
-      "machine_options": {
-        "vagrant_config": {
-          "machine": "centos6"
-        }
-      }
-    },
-    {
-      "node_name": "frontend2",
-      "service": "chef_server",
-      "fqdn": "frontend2.ubuntu.vagrant",
-      "ipaddress": "33.33.33.23",
-      "role": "frontend",
-      "bootstrap": false,
-      "machine_options": {
-        "vagrant_config": {
-          "machine": "centos6"
-        }
-      }
-    },
-    {
-      "node_name": "frontend3",
-      "service": "chef_server",
-      "fqdn": "frontend3.ubuntu.vagrant",
-      "ipaddress": "33.33.33.24",
-      "role": "frontend",
-      "bootstrap": false,
-      "machine_options": {
-        "vagrant_config": {
-          "machine": "centos6"
-        }
-      }
+      "bootstrap": false
     },
     {
       "node_name": "analytics1",
       "service": "analytics",
       "fqdn": "analytics.ubuntu.vagrant",
-      "ipaddress": "33.33.33.25",
+      "interface": "eth1",
+      "machine_options_ipaddress": "33.33.33.25",
       "role": "analytics",
-      "bootstrap": false,
-      "machine_options": {
-        "vagrant_config": {
-          "machine": "centos6"
-        }
-      }
-    },
-    {
-      "node_name": "supermarket1",
-      "service": "supermarket",
-      "fqdn": "supermarket.ubuntu.vagrant",
-      "ipaddress": "33.33.33.26",
-      "role": "supermarket",
-      "bootstrap": false,
-      "machine_options": {
-        "vagrant_config": {
-          "machine": "centos6"
-        }
-      }
-    },
-    {
-      "node_name": "delivery-server1",
-      "service": "delivery",
-      "fqdn": "delivery-server1.ubuntu.vagrant",
-      "ipaddress": "33.33.33.27",
-      "role": "delivery_server",
-      "bootstrap": false,
-      "machine_options": {
-        "vagrant_config": {
-          "machine": "centos6"
-        }
-      }
-    },
-    {
-      "node_name": "delivery-build1",
-      "service": "delivery",
-      "fqdn": "delivery-build1.ubuntu.vagrant",
-      "ipaddress": "33.33.33.28",
-      "role": "delivery_build",
-      "bootstrap": false,
-      "machine_options": {
-        "vagrant_config": {
-          "machine": "centos6"
-        }
-      }
-    },
-    {
-      "node_name": "delivery-build2",
-      "service": "delivery",
-      "fqdn": "delivery-build2.ubuntu.vagrant",
-      "ipaddress": "33.33.33.29",
-      "role": "delivery_build",
-      "bootstrap": false,
-      "machine_options": {
-        "vagrant_config": {
-          "machine": "centos6"
-        }
-      }
-    },
-    {
-      "node_name": "delivery-build3",
-      "service": "delivery",
-      "fqdn": "delivery-build3.ubuntu.vagrant",
-      "ipaddress": "33.33.33.30",
-      "role": "delivery_build",
-      "bootstrap": false,
-      "machine_options": {
-        "vagrant_config": {
-          "machine": "centos6"
-        }
-      }
+      "bootstrap": false
     }
   ]
 }

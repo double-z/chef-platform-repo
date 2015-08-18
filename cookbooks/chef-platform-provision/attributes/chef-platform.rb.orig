@@ -1,29 +1,71 @@
+default['chef_platform']['chef_server']['api_fqdn'] = "chefapi.ubuntu.local"
 
 default['chef_platform']['driver'].tap do |driver|
   driver['name'] = 'vagrant'
+  driver['machine_options'] = {
+    "vagrant_config" => {
+      "machine" => "driver"
+    }
+  }
 end
 
 default['chef_platform']['chef_server'].tap do |chef_server|
   chef_server['version'] = :latest
+  chef_server['prereleases'] = false
+  chef_server['nightlies'] = false
+  chef_server['package_file'] = nil
+  chef_server['package_checksum'] = nil
   chef_server['api_fqdn'] = node['fqdn']
+  chef_server['machine_options'] = {
+    "vagrant_config" => {
+      "machine" => "chef_server"
+    }
+  }
   chef_server['configuration'] = {}
 end
 
 default['chef_platform']['analytics'].tap do |analytics|
   analytics['version'] = :latest
+  analytics['prereleases'] = false
+  analytics['nightlies'] = false
+  analytics['package_file'] = nil
+  analytics['package_checksum'] = nil
   analytics['api_fqdn'] = node['fqdn']
+  analytics['machine_options'] = {
+    "vagrant_config" => {
+      "machine" => "analytics"
+    }
+  }
   analytics['configuration'] = {}
 end
 
 default['chef_platform']['supermarket'].tap do |supermarket|
   supermarket['version'] = :latest
+  supermarket['prereleases'] = false
+  supermarket['nightlies'] = false
+  supermarket['package_file'] = nil
+  supermarket['package_checksum'] = nil
   supermarket['api_fqdn'] = node['fqdn']
+  supermarket['machine_options'] = {
+    "vagrant_config" => {
+      "machine" => "supermarket"
+    }
+  }
   supermarket['configuration'] = {}
 end
 
 default['chef_platform']['delivery'].tap do |delivery|
   delivery['version'] = :latest
+  delivery['prereleases'] = false
+  delivery['nightlies'] = false
+  delivery['package_file'] = nil
+  delivery['package_checksum'] = nil
   delivery['api_fqdn'] = node['fqdn']
+  delivery['machine_options'] = {
+    "vagrant_config" => {
+      "machine" => "delivery"
+    }
+  }
   delivery['configuration'] = {}
 end
 
@@ -32,28 +74,146 @@ default['chef_platform']['nodes'] = [
     "node_name" => "backend1",
     "service" => "chef_server",
     "fqdn" =>"backend1.ubuntu.vagrant",
-    "interface" => "eth1",
-    "machine_options_ipaddress" => "33.33.33.20",
+    "ipaddress" => "33.33.33.21",
+    "cluster_ipaddress" => "33.33.34.5",
     "role" => "backend",
-    "bootstrap" => true
+    "bootstrap" => true,
+    "machine_options" => {
+      "vagrant_config" => {
+        "machine" => "centos6"
+      }
+    }
+  },
+  {
+    "node_name" => "backend2",
+    "service" => "chef_server",
+    "fqdn" => "backend1.ubuntu.vagrant",
+    "ipaddress" => "33.33.33.31",
+    "cluster_ipaddress" => "33.33.34.4",
+    "role" => "backend",
+    "bootstrap" => false,
+    "machine_options" => {
+      "vagrant_config" => {
+        "machine" => "centos6"
+      }
+    }
   },
   {
     "node_name" => "frontend1",
     "service" => "chef_server",
     "fqdn" => "frontend1.ubuntu.vagrant",
-    "interface" => "eth1",
-    "machine_options_ipaddress" => "33.33.33.22",
+    "ipaddress" => "33.33.33.22",
     "role" => "frontend",
-    "bootstrap" => false
+    "bootstrap" => false,
+    "machine_options" => {
+      "vagrant_config" => {
+        "machine" => "centos6"
+      }
+    }
+  },
+  {
+    "node_name" => "frontend2",
+    "service" => "chef_server",
+    "fqdn" => "frontend2.ubuntu.vagrant",
+    "ipaddress" => "33.33.33.23",
+    "role" => "frontend",
+    "bootstrap" => false,
+    "machine_options" => {
+      "vagrant_config" => {
+        "machine" => "centos6"
+      }
+    }
+  },
+  {
+    "node_name" => "frontend3",
+    "service" => "chef_server",
+    "fqdn" => "frontend3.ubuntu.vagrant",
+    "ipaddress" => "33.33.33.24",
+    "role" => "frontend",
+    "bootstrap" => false,
+    "machine_options" => {
+      "vagrant_config" => {
+        "machine" => "centos6"
+      }
+    }
   },
   {
     "node_name" => "analytics1",
     "service" => "analytics",
     "fqdn" => "analytics.ubuntu.vagrant",
-    "interface" => "eth1",
-    "machine_options_ipaddress" => "33.33.33.25",
+    "ipaddress" => "33.33.33.25",
     "role" => "analytics",
-    "bootstrap" => false
+    "bootstrap" => false,
+    "machine_options" => {
+      "vagrant_config" => {
+        "machine" => "centos6"
+      }
+    }
+  },
+  {
+    "node_name" => "supermarket1",
+    "service" => "supermarket",
+    "fqdn" => "supermarket.ubuntu.vagrant",
+    "ipaddress" => "33.33.33.26",
+    "role" => "supermarket",
+    "bootstrap" => false,
+    "machine_options" => {
+      "vagrant_config" => {
+        "machine" => "centos6"
+      }
+    }
+  },
+  {
+    "node_name" => "delivery-server1",
+    "service" => "delivery",
+    "fqdn" => "delivery-server1.ubuntu.vagrant",
+    "ipaddress" => "33.33.33.27",
+    "role" => "delivery_server",
+    "bootstrap" => false,
+    "machine_options" => {
+      "vagrant_config" => {
+        "machine" => "centos6"
+      }
+    }
+  },
+  {
+    "node_name" => "delivery-build1",
+    "service" => "delivery",
+    "fqdn" => "delivery-build1.ubuntu.vagrant",
+    "ipaddress" => "33.33.33.28",
+    "role" => "delivery_build",
+    "bootstrap" => false,
+    "machine_options" => {
+      "vagrant_config" => {
+        "machine" => "centos6"
+      }
+    }
+  },
+  {
+    "node_name" => "delivery-build2",
+    "service" => "delivery",
+    "fqdn" => "delivery-build2.ubuntu.vagrant",
+    "ipaddress" => "33.33.33.29",
+    "role" => "delivery_build",
+    "bootstrap" => false,
+    "machine_options" => {
+      "vagrant_config" => {
+        "machine" => "centos6"
+      }
+    }
+  },
+  {
+    "node_name" => "delivery-build3",
+    "service" => "delivery",
+    "fqdn" => "delivery-build3.ubuntu.vagrant",
+    "ipaddress" => "33.33.33.30",
+    "role" => "delivery_build",
+    "bootstrap" => false,
+    "machine_options" => {
+      "vagrant_config" => {
+        "machine" => "centos6"
+      }
+    }
   }
 ]
 
@@ -353,16 +513,16 @@ default['chef_platform']['nodes'] = [
 
 
 # server = [
-#   {
-#     "fqdn" => "",
-#     "role" => "",
-#     "" => "",
-#     "" => "",
-#     "" => "",
-#     "" => "",
-#     "" => "",
-#     "" => "",
-#     "" => ""
-#   }
+# 	{
+# 		"fqdn" => "",
+# 		"role" => "",
+# 		"" => "",
+# 		"" => "",
+# 		"" => "",
+# 		"" => "",
+# 		"" => "",
+# 		"" => "",
+# 		"" => ""
+# 	}
 # ]
 # default['chef_platform'].tap do |chef_platform|

@@ -18,7 +18,7 @@ module Provisioner
     #       end
 
     def initialize(platform_data)
-      @platform_data = platform_data
+      @platform_data = ::Provisioner.deep_hashify(platform_data)
     end
 
     attr_reader :platform_data
@@ -82,12 +82,21 @@ module Provisioner
       platform_data['nodes']
     end
 
-    def node_data(server_name)
-      nodes[server_name]
+    # def node_test
+    #   platform_data['node_test']
+    # end
+
+    def nodes=(nodes_array)
+      platform_data['nodes'] ||= []
+      platform_data['nodes'] = nodes_array
     end
 
-    def node_ip(server)
-    end
+    # def node_data(server_name)
+    #   nodes[server_name]
+    # end
+
+    # def node_ip(server)
+    # end
 
     ###
     #
@@ -132,6 +141,7 @@ module Provisioner
     # could be lost, you should do this as quickly as possible.  platform_data will be
     # saved automatically for you after allocate_platform and ready_platform.
     #
+
     def save(action_handler)
       raise "save unimplemented"
     end
