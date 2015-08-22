@@ -28,6 +28,10 @@ module Provisioner
     # Driver Name and Machine Options
     #
 
+    def platform_data=(data)
+      platform_data = data
+    end
+
     def driver
       platform_data['driver']
     end

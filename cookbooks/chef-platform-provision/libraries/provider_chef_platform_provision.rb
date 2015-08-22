@@ -39,14 +39,45 @@ class Chef
         # action_allocate if (!platform_spec.ready? ||
         #            platform_spec.toplology_changed? ||
         #            platform_spec.base_updated?)
-        # 
         #
+        #
+        if all_nodes_ready?
+          puts "READY!"
+          puts "READY!"
+          puts "READY!"
+          puts "READY!"
+          puts "READY!"
+          puts "READY!"
+          puts "READY!"
+          puts "READY!"
+          puts "READY!"
+          puts "READY!"
+          puts "READY!"
+          puts "READY!"
+          puts "READY!"
+          puts "READY!"
+          puts "READY!"
+          puts "READY!"
+          puts "READY!"
+          puts "READY!"
+        else
+          puts "NOT READY!"
+          puts "NOT READY!"
+          puts "NOT READY!"
+          puts "NOT READY!"
+          puts "NOT READY!"
+          puts "NOT READY!"
+          puts "NOT READY!"
+          puts "NOT READY!"
+          puts "NOT READY!"
+          puts "NOT READY!"
+          puts "NOT READY!"
+          puts "NOT READY!"
+          puts "NOT READY!"
+        end
 
-        b = machine_batch 'ready_all' do
-          action :converge
-          # action :ready
-          # action :allocate
-          # action :destroy
+        b = machine_batch 'machine_batch_ready_all' do
+          action :nothing
           new_platform_spec.all_nodes.each do |server|
             machine server['node_name'] do
               driver "vagrant"
@@ -54,61 +85,136 @@ class Chef
               converge true
             end
           end
-          notifies :run, 'ruby_block[ready_action_for]', :immediately
         end
 
-        ruby_block "ready_action_for" do
+        b.run_action(:converge)
+        apd("ready b.updated_by_last_action?.to_s", true_false_to_s(b.updated_by_last_action?))
+
+        ruby_block "ready_action_node_sync" do
           block do
             node_data = []
             b.machines.each do |bm|
               node_driver = Chef::Provider::ChefNode.new(bm, run_context)
               node_driver.load_current_resource
-              json = node_driver.new_json
-
+              json = ::Provisioner.deep_hashify(node_driver.new_json)
               if (json["automatic"] &&
                   json["automatic"]["network"] &&
                   json["automatic"]["network"]["interfaces"])
 
                 new_platform_spec.all_nodes.each do |_server|
                   server = ::Provisioner.deep_hashify(_server)
-                  puts "IF:"
-                  apd("server", server)
-                  puts server["interface"]
-                  # server.each do |kk, vv|
-                  #   puts "kk =#{kk} vv=#{vv}"
+                  node_data << get_node_with_ip(server, json)
+                  # if ( !server['ipaddress'] && (bm.name == server['node_name']))
+                  #   puts "bm.name: #{bm.name}"
+                  #   puts "server.name: #{server['node_name']}"
+                  #   json["automatic"]["network"]["interfaces"]["#{server['interface']}"]["addresses"].each do |k,v|
+                  #     new_data = ::Provisioner.deep_hashify(server)
+                  #     new_data['ipaddress'] = k.to_s if (v["family"] == "inet")
+                  #     node_data << new_data if (new_data['ipaddress'] && (v["family"] == "inet"))
+                  #   end
                   # end
-                  puts "IF:"
-                  puts "json['automatic']['network']['interfaces'][#{server['interface']}]['addresses']" #.each do |k,v|
-                  json["automatic"]["network"]["interfaces"]["eth1"]["addresses"].each do |k,v|
-                    if (bm.name == server['node_name'])
-                      new_data = ::Provisioner.deep_hashify(server)
-                      new_data['ipaddress'] = k.to_s if (v["family"] == "inet") # ||
-                      node_data << new_data if new_data['ipaddress']
-                    end
-                  end
                 end
 
               end
-
             end
-            new_platform_spec.nodes = node_data
+            # new_platform_spec.last_action = "ready"
+            # new_platform_spec.last_action_at = Time.now
+            new_platform_spec.nodes = node_data if !node_data.empty?
             new_platform_spec.save_data_bag(action_handler)
             apd("node_data", new_platform_spec.all_nodes)
           end
-          action :nothing
-          notifies :bootstrap, "chef_platform_provision[prod]", :immediately
+          action :nothing unless b.updated_by_last_action?
+          notifies :_test_ready, "chef_platform_provision[prod]", :immediately
+        end
+      end
+
+      action :_test_ready do
+        ruby_block 'run_test_ready' do
+          block do
+            apd("ruby_block_all_nodes_test_ready", new_platform_spec.all_nodes)
+          end
+          action :run
+          notifies :generate_config, "chef_platform_provision[prod]", :immediately
+        end
+        if all_nodes_ready?
+          puts "TREADY!"
+          puts "TREADY!"
+          puts "TREADY!"
+          puts "TREADY!"
+          puts "TREADY!"
+        else
+          puts "TNOT READY!"
+          puts "TNOT READY!"
+          puts "TNOT READY!"
+          puts "TNOT READY!"
+          puts "TNOT READY!"
+        end
+      end
+
+      action :generate_config do
+        server_rb_file_path = ::File.join(Chef::Config[:chef_repo_path], "chef-server.rb")
+        r = Chef::Resource::Template.new(server_rb_file_path, run_context)
+        r.source("chef-server.rb.erb")
+        r.mode("0644")
+        r.cookbook("chef-platform-provision")
+        r.variables(
+          :chef_servers => new_platform_spec.chef_server_nodes,
+          :chef_server_config => new_platform_spec.chef_server_config,
+          :chef_server_data => new_platform_spec.chef_server_data
+        )
+
+        server_rb_file_path = ::File.join(Chef::Config[:chef_repo_path], "chef-server2.rb")
+        rr = Chef::Resource::Template.new(server_rb_file_path, run_context)
+        rr.source("chef-server.rb.erb")
+        rr.mode("0644")
+        rr.cookbook("chef-platform-provision")
+        rr.variables(
+          :chef_servers => new_platform_spec.chef_server_nodes,
+          :chef_server_config => new_platform_spec.chef_server_config,
+          :chef_server_data => new_platform_spec.chef_server_data
+        )
+
+        r.run_action(:create)
+        rr.run_action(:create)
+
+        ruby_block 'generate_configs' do
+          block do
+            # Mostly for Singular Notificationer
+            # Do Sanity Check/Validation/Etc here
+          end
+          action :nothing unless (r.updated_by_last_action? || rr.updated_by_last_action?)
+          notifies :push_config, "chef_platform_provision[prod]", :immediately
+        end
+
+      end
+
+      action :push_config do
+        machine_batch 'do_push_config' do
+          action :converge
+          new_platform_spec.all_nodes.each do |server|
+            machine server['node_name'] do
+              driver "vagrant"
+              machine_options vagrant_machine_opts_for(server)
+              files(
+                '/etc/opscode/chef-server.rb' => ::File.join(Chef::Config[:chef_repo_path], "chef-server.rb"),
+                '/etc/opscode/chef-server2.rb' => ::File.join(Chef::Config[:chef_repo_path], "chef-server2.rb")
+              )
+              # converge true
+            end
+          end
         end
       end
 
       action :bootstrap do
         ruby_block 'bootstrap_action' do
           block do
-            current_platform_spec.all_nodes.each do |server|
-              puts "  machine #{server['node_name']} do"
-              puts "    machine_options machine_options_for(#{apl(vagrant_machine_opts_for(server))})"
-              puts "  end"
-              puts "end"
-            end
+            puts "BOOTSTRAP"
+            # current_platform_spec.all_nodes.each do |server|
+            #   puts "  machine #{server['node_name']} do"
+            #   puts "    machine_options machine_options_for(#{apl(vagrant_machine_opts_for(server))})"
+            #   puts "  end"
+            #   puts "end"
+            # end
           end
           action :run
         end
@@ -118,12 +224,33 @@ class Chef
 
       end
 
-      action :destroy_all do
-
+      action :reconfigure do
+        if should_run?
+          if !all_nodes_ready?
+            action_ready
+          else
+            action_generate_config
+          end
+          @new_resource.updated_by_last_action(true)
+        else
+          @new_resource.updated_by_last_action(false)
+        end
       end
 
-      action :converge do
-        action_allocate
+      action :destroy_all do
+        bd = machine_batch 'machine_batch_ready_all' do
+          action :nothing
+          new_platform_spec.all_nodes.each do |server|
+            machine server['node_name'] do
+              driver "vagrant"
+              machine_options vagrant_machine_opts_for(server)
+              converge true
+            end
+          end
+        end
+
+        bd.run_action(:destroy)
+        @new_resource.updated_by_last_action(db.updated_by_last_action?)
       end
 
       def vagrant_machine_opts_for(server)
@@ -157,38 +284,46 @@ class Chef
         Cheffish::MergedConfig.new(*configs)
       end
 
-      def attribute_data_changed?
-        new_attribute_data == current_attribute_data
-      end
-
-      def should_ready_notify_chef_server()
-      end
-
-      def should_ready_notify_analytics()
-      end
-
-      def should_ready_notify_supermarket()
-      end
-
-      attr_reader :platform_spec, :new_platform_spec, :current_platform_spec, :rollback_platform_spec
-
-      # def load_current_resource
-      #   @new_platform_spec = Provisioner::ChefPlatformSpec.new_spec(new_resource.platform_data)
-      #   @current_platform_spec = Provisioner::ChefPlatformSpec.current_spec(new_resource.policy_group)
-      #   @rollback_platform_spec = Provisioner::ChefPlatformSpec.rollback_spec(new_resource.policy_group)
-      # end
+      attr_reader :chef_server, :platform_spec, :new_platform_spec, :current_platform_spec, :rollback_platform_spec
 
       def load_current_resource
-        # @platform_spec = Provisioner::ChefPlatformSpec.new(new_resource.platform_data)
-        @new_platform_spec = Provisioner::ChefPlatformSpec.new_spec(new_resource.platform_data)
+        apd("LOAD_CURRENT_RESOURCE", new_resource.init_time)
+        @chef_server = new_resource.chef_server
+        @new_platform_spec = Provisioner::ChefPlatformSpec.new_spec(new_resource.policy_group,
+                                                                    ::Provisioner.deep_hashify(new_resource.platform_data))
         @current_platform_spec = Provisioner::ChefPlatformSpec.current_spec(new_resource.policy_group)
         log_all_data if new_resource.log_all
-        # pp run_context.resource_collection.inspect
-        # apd("current_platform_nodes", @current_platform_spec.all_nodes)
-        # apd("new_platform_nodes", @new_platform_spec.all_nodes)
-        apd("current_platform_nodes", @current_platform_spec.get)
         apd("new_platform_nodes", @new_platform_spec.get)
-        new_platform_spec.save_data_bag(action_handler) # if nodes_updated?
+        apd("current_platform_nodes", @current_platform_spec.nodes)
+      end
+
+      def get_node_with_ip(server, json)
+        # if ( !server['ipaddress'] && (bm.name == server['node_name']))
+        #   puts "bm.name: #{bm.name}"
+        #   puts "server.name: #{server['node_name']}"
+        #   json["automatic"]["network"]["interfaces"]["#{server['interface']}"]["addresses"].each do |k,v|
+        #     new_data = ::Provisioner.deep_hashify(server)
+        #     new_data['ipaddress'] = k.to_s if (v["family"] == "inet")
+        #     node_data << new_data if (new_data['ipaddress'] && (v["family"] == "inet"))
+        #   end
+        # end
+      end
+
+      def all_nodes_ready?
+        nodes_ready = current_platform_spec.nodes
+        if nodes_ready.nil?
+          false
+        else
+          true
+        end
+      end
+
+      def true_false_to_s(tf)
+        if tf
+          "true"
+        else
+          "false"
+        end
       end
 
       ####

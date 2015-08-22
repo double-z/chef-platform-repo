@@ -45,7 +45,7 @@ class Chef
         }
         name = "prod"
         super
-        pp run_context.instance_variables
+        # pp run_context.instance_variables
         @chef_server = Cheffish.default_chef_server
         @chef_environment = run_context.cheffish.current_environment
         @driver = run_context.chef_provisioning.current_driver
@@ -73,7 +73,7 @@ class Chef
       # to specify things like `run_list`, `chef_server`, etc.
       Cheffish.node_attributes(self)
 
-      actions :allocate, :ready, :setup, :converge, :converge_only, :destroy, :destroy_all, :stop, :bootstrap, :deploy
+      actions :allocate, :ready, :test_ready, :setup, :converge, :reconfigure, :generate_config, :push_config, :destroy, :destroy_all, :stop, :bootstrap, :deploy
       default_action :nothing
 
       attribute :merged_platform_data, :kind_of => Hash
@@ -81,6 +81,7 @@ class Chef
       attribute :policy_override_attributes, :kind_of => Hash
       attribute :policy_default_attributes, :kind_of => Hash
       attribute :platform_attributes, :kind_of => Hash
+      attribute :init_time, :kind_of => String, :default => Time.now.strftime("%Y%m%d%H%M%S")
       attribute :platform_data, :kind_of => Hash
       attribute :chef_platform_harness_attrs, :kind_of => Hash
       attribute :log_all, :kind_of => [ TrueClass, FalseClass ], :default => false

@@ -16,16 +16,21 @@ module Provisioner
   class ChefPlatformSpec < PlatformSpec
     # include Provisioner::Helpers
 
-    def initialize(platform_data)
+    def initialize(platform_data, chef_server = Cheffish.default_chef_server)
       super(platform_data)
-      # @chef_server = chef_server
+      @chef_server = chef_server
     end
 
+    attr_reader :chef_server
+
+    def chef_api
+      @chef_api ||= Cheffish.chef_server_api(chef_server)
+    end
     # def self.get_or_empty(new_or_current, new_resource, chef_server = Cheffish.default_chef_server)
-    # 	case new_or_current
-    # 	when "new"
-    # 		self.new_entry(new_resource.name, chef_server)
-    # 	when "current"
+    #   case new_or_current
+    #   when "new"
+    #     self.new_entry(new_resource.name, chef_server)
+    #   when "current"
     #   val = (self.get(new_resource.name, chef_server) || )
     #   val
     # end
@@ -35,21 +40,23 @@ module Provisioner
       val
     end
 
-    def self.get_or_empty(new_config, chef_server = Cheffish.default_chef_server)
-      val = (self.get(new_config.name, chef_server) || self.new_entry(new_config, chef_server))
+    def self.get_or_empty(new_config)
+    	config_hash = 
+      val = (self.get(config_hash['name'], chef_server) || self.new_entry(config_hash, chef_server))
       val
     end
 
-    def self.current_spec(config_name, chef_server = Cheffish.default_chef_server)
-      # val = (self.get(new_config.name, chef_server) || self.new_entry(new_config, chef_server))
-      puts "config_name #{config_name}"
-      val = self.get(config_name)
+    def self.current_spec(policy_group)
+      new_config_hash = Hash.new
+      val = (self.get(policy_group) || self.new_entry(new_config_hash))
+      # puts "config_name #{config_name}"
+      # val = self.get(config_name)
       val
     end
 
-    def self.new_spec(new_config, chef_server = Cheffish.default_chef_server)
-      # val = (self.get(new_config.name, chef_server) || self.new_entry(new_config, chef_server))
-      val = self.new_entry(new_config, chef_server)
+    def self.new_spec(policy_group, new_config)
+      # val = (self.get(policy_group) || self.new_entry(new_config))
+      val = self.new_entry(new_config)
       # puts "VAL: #{val}"
       val
     end
@@ -226,6 +233,10 @@ module Provisioner
       end
       val = (frontends.empty?) ? false : true
       val
+    end
+
+    def chef_server_data
+      self.platform_data['chef_server']
     end
 
     def chef_server_config

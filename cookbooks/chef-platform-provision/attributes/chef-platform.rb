@@ -4,9 +4,35 @@ default['chef_platform']['driver'].tap do |driver|
 end
 
 default['chef_platform']['chef_server'].tap do |chef_server|
+  chef_server['topology'] = "tier"
   chef_server['version'] = :latest
   chef_server['api_fqdn'] = node['fqdn']
-  chef_server['configuration'] = {}
+  chef_server['configuration'] = {
+    "postgresql" => {
+      "max_connections" => 1500,
+      "log_min_duration_statement" => 500
+    },
+    # "oc_id" => {
+
+    # },
+    "opscode_erchef" => {
+      "depsolver_worker_count" => 4,
+      "depsolver_timeout" => 120000,
+      "db_pool_size" => 100
+    },
+    "oc_bifrost" => {
+      "db_pool_size" => 100
+    },
+    "opscode_certificate" => {
+      "num_workers" => 4,
+      "num_certificates_per_worker" => 1000
+    },
+    "oc_chef_authz" => {
+      "http_init_count" => 150,
+      "http_max_count" => 150
+    }
+  }
+
 end
 
 default['chef_platform']['analytics'].tap do |analytics|

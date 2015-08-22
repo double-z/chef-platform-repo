@@ -1,7 +1,0 @@
-name 'chef-platform-common'
-maintainer 'Zack Zondlo'
-maintainer_email 'zzondlo@chef.io'
-license 'all_rights'
-description 'Installs/Configures chef-platform-common'
-long_description 'Installs/Configures chef-platform-common'
-version '0.1.0'
