@@ -106,12 +106,12 @@ class Chef
             # Also for Singular Notificationer
             # Do Sanity Check/Validation etc. here
           end
-          notifies :push_config, "chef_platform_provision[prod]", :immediately
+          notifies :_push_config, "chef_platform_provision[prod]", :immediately
         end
 
       end
 
-      action :push_config do
+      action :_push_config do
         machine_batch 'do_push_config' do
           action :converge
           new_platform_spec.all_nodes.each do |server|
@@ -127,25 +127,8 @@ class Chef
         end
       end
 
-      action :bootstrap do
-        ruby_block 'bootstrap_action' do
-          block do
-            puts "BOOTSTRAP"
-            # current_platform_spec.all_nodes.each do |server|
-            #   puts "  machine #{server['node_name']} do"
-            #   puts "    machine_options machine_options_for(#{apl(vagrant_machine_opts_for(server))})"
-            #   puts "  end"
-            #   puts "end"
-            # end
-          end
-          action :run
-        end
-      end
-
       action :reconfigure do
         if should_run?
-          # apd("chef_server_config_updated?", true_false_to_s(chef_server_config_updated?))
-          # apd("analytics_config_updated?", true_false_to_s(analytics_config_updated?))
           if !all_nodes_ready?
             action_ready
           else
@@ -158,7 +141,7 @@ class Chef
       end
 
       action :destroy_all do
-        bd = machine_batch 'machine_batch_ready_all' do
+        mbd = machine_batch 'machine_batch_ready_all' do
           action :nothing
           new_platform_spec.all_nodes.each do |server|
             machine server['node_name'] do
@@ -169,12 +152,12 @@ class Chef
           end
         end
 
-        bd.run_action(:destroy)
+        mbd.run_action(:destroy)
 
-        chef_server_rb_template.run_action(:delete) if bd.updated_by_last_action?
-        analytics_rb_template.run_action(:delete) if bd.updated_by_last_action?
-        new_platform_spec.delete_data_bag_item_entry(action_handler) if bd.updated_by_last_action?
-        @new_resource.updated_by_last_action(bd.updated_by_last_action?)
+        chef_server_rb_template.run_action(:delete) if mbd.updated_by_last_action?
+        analytics_rb_template.run_action(:delete) if mbd.updated_by_last_action?
+        new_platform_spec.delete_data_bag_item_entry(action_handler) if mbd.updated_by_last_action?
+        @new_resource.updated_by_last_action(mbd.updated_by_last_action?)
       end
 
       def vagrant_machine_opts_for(server)
