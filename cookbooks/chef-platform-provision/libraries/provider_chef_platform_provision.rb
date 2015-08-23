@@ -11,40 +11,22 @@ require "awesome_print"
 class Chef
   class Provider
     class ChefPlatformProvision < Chef::Provider::LWRPBase
-      # use_inline_resources # if defined?(use_inline_resources)
 
-      def whyrun_supported?
-        true
-      end
+      # def whyrun_supported?
+      #   true
+      # end
 
       def action_handler
         @action_handler ||= Chef::Provisioning::ChefProviderActionHandler.new(self)
       end
 
-      def action_handler=(value)
-        @action_handler = value
-      end
-
-      # Register What platfrom_spec data we have at this point.
-      # This will be used by the the ready action to determine state.
-      action :allocate do
-
-        # new_platform_spec.status = "allocated"
-        # new_platform_spec.allocated_at = Time.now
-      end
-
       action :ready do
-        # action_allocate if (!platform_spec.ready? ||
-        #            platform_spec.toplology_changed? ||
-        #            platform_spec.base_updated?)
-        #
-        #
 
         b = machine_batch 'machine_batch_ready_all' do
           action :nothing
           new_platform_spec.all_nodes.each do |server|
             machine server['node_name'] do
-              driver "ssh"
+              driver new_platform_spec.driver_name
               machine_options machine_opts_for(server)
               converge true
             end
@@ -100,12 +82,11 @@ class Chef
 
         ruby_block 'generate_configs' do
           block do
+            # Also for Singular Notificationer
+            # Do Sanity Check/Validation etc. here
             chef_server_rb_template.run_action(:create)
             analytics_rb_template.run_action(:create)
             new_platform_spec.save_data_bag(action_handler)
-
-            # Also for Singular Notificationer
-            # Do Sanity Check/Validation etc. here
           end
           notifies :_push_config, "chef_platform_provision[prod]", :immediately
         end
@@ -117,7 +98,7 @@ class Chef
           action :converge
           new_platform_spec.all_nodes.each do |server|
             machine server['node_name'] do
-              driver "ssh"
+              driver new_platform_spec.driver_name
               machine_options machine_opts_for(server)
               files(
                 '/etc/opscode/chef-server.rb' => local_chef_server_rb_path,
@@ -206,7 +187,7 @@ class Chef
         Cheffish::MergedConfig.new(*configs)
       end
 
-      attr_reader :chef_server, :platform_spec, :new_platform_spec, :current_platform_spec, :rollback_platform_spec
+      attr_reader :chef_server, :new_platform_spec, :current_platform_spec, :rollback_platform_spec
 
       def load_current_resource
         apd("Resource Init Time", new_resource.init_time)
@@ -214,7 +195,6 @@ class Chef
         @current_platform_spec = Provisioner::ChefPlatformSpec.current_spec(new_resource.policy_group)
         @new_platform_spec = Provisioner::ChefPlatformSpec.new_spec(new_resource.policy_group,
                                                                     ::Provisioner.deep_hashify(new_resource.platform_data))
-        apd("driver", new_platform_spec.driver_name)
         new_platform_spec.nodes = all_ready_nodes if all_nodes_ready?
         log_all_data if new_resource.log_all
       end
@@ -243,19 +223,6 @@ class Chef
           :chef_server_data => new_platform_spec.chef_server_data
         )
         csrt
-      end
-
-      def get_node_with_ip(server, json)
-        if ( !server['ipaddress'] && (bm.name == server['node_name']))
-          puts "bm.name: #{bm.name}"
-          puts "server.name: #{server['node_name']}"
-          json["automatic"]["network"]["interfaces"]["#{server['interface']}"]["addresses"].each do |k,v|
-            new_data = ::Provisioner.deep_hashify(server)
-            new_data['ipaddress'] = k.to_s if (v["family"] == "inet")
-            return_data = (new_data['ipaddress'] && (v["family"] == "inet"))
-            return_data
-          end
-        end
       end
 
       def should_run?
