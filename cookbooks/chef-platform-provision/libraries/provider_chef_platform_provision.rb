@@ -22,6 +22,13 @@ class Chef
 
       action :ready do
 
+        d = directory platform_policy_path do
+          mode '0755'
+          action :nothing
+          recursive true
+        end
+        d.run_action(:create) unless ::File.exists?(platform_policy_path)
+
         b = machine_batch 'machine_batch_ready_all' do
           action :nothing
           new_platform_spec.all_nodes.each do |server|
@@ -79,15 +86,18 @@ class Chef
       end
 
       action :generate_config do
+        chef_server_rb_template.run_action(:create)
+        analytics_rb_template.run_action(:create)
+        run_notify_push_config = ( chef_server_rb_template.updated_by_last_action? ||
+                                   analytics_rb_template.updated_by_last_action?)
 
-        ruby_block 'generate_configs' do
+        ruby_block 'notify_push_config' do
           block do
-            # Also for Singular Notificationer
-            # Do Sanity Check/Validation etc. here
-            chef_server_rb_template.run_action(:create)
-            analytics_rb_template.run_action(:create)
+            # Singular Notifier
+            # Can do Sanity Check/Validation etc. here too
             new_platform_spec.save_data_bag(action_handler)
           end
+          action :nothing unless run_notify_push_config
           notifies :_push_config, "chef_platform_provision[prod]", :immediately
         end
 
@@ -199,39 +209,61 @@ class Chef
         log_all_data if new_resource.log_all
       end
 
+      def platform_policy_path
+        ::File.join(Chef::Config[:chef_repo_path], "policy", new_resource.policy_group)
+      end
+
+      def local_analytics_rb_path
+        ::File.join(platform_policy_path, "analytics.rb")
+      end
+
+      def local_chef_server_rb_path
+        ::File.join(platform_policy_path, "chef-server.rb")
+      end
+
       def analytics_rb_template
-        analytics_rb_file_path = ::File.join(Chef::Config[:chef_repo_path], "analytics.rb")
-        arbt = Chef::Resource::Template.new(analytics_rb_file_path, run_context)
-        arbt.source("analytics.rb.erb")
-        arbt.mode("0644")
-        arbt.cookbook("chef-platform-provision")
-        arbt.variables(
-          :chef_analytics => new_platform_spec.analytics_data
-        )
-        arbt
+        @analytics_rb_template ||= begin
+          puts "analytics_rb_template"
+          arbt = Chef::Resource::Template.new(local_analytics_rb_path, run_context)
+          arbt.source("analytics.rb.erb")
+          arbt.mode("0644")
+          arbt.cookbook("chef-platform-provision")
+          arbt.variables(
+            :chef_analytics => new_platform_spec.analytics_data
+          )
+          arbt
+        end
       end
 
       def chef_server_rb_template
-        server_rb_file_path = ::File.join(Chef::Config[:chef_repo_path], "chef-server.rb")
-        csrt = Chef::Resource::Template.new(server_rb_file_path, run_context)
-        csrt.source("chef-server.rb.erb")
-        csrt.mode("0644")
-        csrt.cookbook("chef-platform-provision")
-        csrt.variables(
-          :chef_servers => new_platform_spec.chef_server_nodes,
-          :chef_server_config => new_platform_spec.chef_server_config,
-          :chef_server_data => new_platform_spec.chef_server_data
-        )
-        csrt
+        @chef_server_rb_template ||= begin
+          puts "chef_server_rb_template"
+          csrt = Chef::Resource::Template.new(local_chef_server_rb_path, run_context)
+          csrt.source("chef-server.rb.erb")
+          csrt.mode("0644")
+          csrt.cookbook("chef-platform-provision")
+          csrt.variables(
+            :chef_servers => new_platform_spec.chef_server_nodes,
+            :chef_server_config => new_platform_spec.chef_server_config,
+            :chef_server_data => new_platform_spec.chef_server_data
+          )
+          csrt
+        end
       end
 
+      # Check if should run
       def should_run?
-        val = false
         val = (!all_nodes_ready? ||
                config_updated?)
-        val
       end
 
+      # Check all configs
+      def config_updated?
+        val = (chef_server_config_updated? ||
+               analytics_config_updated?)
+      end
+
+      # Check if all nodes are ready
       def all_nodes_ready?
         nodes_ready = current_platform_spec.nodes
         if nodes_ready.nil?
@@ -241,28 +273,15 @@ class Chef
         end
       end
 
+      # Returns all ready nodes
       def all_ready_nodes
         current_platform_spec.nodes
-      end
-
-      def local_analytics_rb_path
-        ::File.join(Chef::Config[:chef_repo_path], "analytics.rb")
-      end
-
-      def local_chef_server_rb_path
-        ::File.join(Chef::Config[:chef_repo_path], "chef-server.rb")
       end
 
       ####
       #
       # Begin Check Configs
       #
-
-      # Check all configs
-      def config_updated?
-        val = (chef_server_config_updated? ||
-               analytics_config_updated?)
-      end
 
       # Check chef_server
       def chef_server_config_updated?
