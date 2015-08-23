@@ -1,7 +1,7 @@
 {
   "id": "chef_platform",
   "driver": {
-    "name": "vagrant"
+    "name": "ssh"
   },
   "chef_server": {
     "topology": "tier",
@@ -9,7 +9,7 @@
     "api_fqdn": "chef-server.chefplatform.local",
     "configuration": {
       "postgresql": {
-        "max_connections": 1501,
+        "max_connections": 1500,
         "log_min_duration_statement": 500
       },
       "opscode_erchef": {
@@ -40,7 +40,7 @@
           "prod",
           "preprod"
         ],
-        "hipchat_room": "Chef Notification"
+        "hipchat_room": "Chef Notifications"
       }
     }
   },

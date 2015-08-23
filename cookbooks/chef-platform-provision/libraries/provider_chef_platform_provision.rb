@@ -1,6 +1,7 @@
 require 'cheffish'
 require 'chef/provisioning'
 require 'chef/provisioning/vagrant_driver'
+require 'chef/provisioning/ssh_driver'
 require 'chef/provider/lwrp_base'
 require 'chef/provider/chef_node'
 require 'openssl'
@@ -43,8 +44,8 @@ class Chef
           action :nothing
           new_platform_spec.all_nodes.each do |server|
             machine server['node_name'] do
-              driver "vagrant"
-              machine_options vagrant_machine_opts_for(server)
+              driver "ssh"
+              machine_options machine_opts_for(server)
               converge true
             end
           end
@@ -116,8 +117,8 @@ class Chef
           action :converge
           new_platform_spec.all_nodes.each do |server|
             machine server['node_name'] do
-              driver "vagrant"
-              machine_options vagrant_machine_opts_for(server)
+              driver "ssh"
+              machine_options machine_opts_for(server)
               files(
                 '/etc/opscode/chef-server.rb' => local_chef_server_rb_path,
                 '/etc/opscode-analytics/analytics.rb' => local_analytics_rb_path
@@ -160,8 +161,22 @@ class Chef
         @new_resource.updated_by_last_action(mbd.updated_by_last_action?)
       end
 
+      def machine_opts_for(server)
+        case new_platform_spec.driver_name
+        when "ssh"
+          ssh_machine_opts_for(server)
+        when "vagrant"
+          vagrant_machine_opts_for(server)
+        end
+      end
+
       def vagrant_machine_opts_for(server)
         machine_ops = ::VagrantConfigHelper.generate_config(server)
+        machine_ops
+      end
+
+      def ssh_machine_opts_for(server)
+        machine_ops = ::SshConfigHelper.generate_config(server)
         machine_ops
       end
 
@@ -194,11 +209,12 @@ class Chef
       attr_reader :chef_server, :platform_spec, :new_platform_spec, :current_platform_spec, :rollback_platform_spec
 
       def load_current_resource
-        # apd("Resource Init Time", new_resource.init_time)
+        apd("Resource Init Time", new_resource.init_time)
         @chef_server = new_resource.chef_server
         @current_platform_spec = Provisioner::ChefPlatformSpec.current_spec(new_resource.policy_group)
         @new_platform_spec = Provisioner::ChefPlatformSpec.new_spec(new_resource.policy_group,
                                                                     ::Provisioner.deep_hashify(new_resource.platform_data))
+        apd("driver", new_platform_spec.driver_name)
         new_platform_spec.nodes = all_ready_nodes if all_nodes_ready?
         log_all_data if new_resource.log_all
       end
@@ -335,36 +351,11 @@ class Chef
       end
 
       def apd(name, data)
-        upname = name.upcase
-        puts
-        puts "=========================================================="
-        puts
-        puts "BEGIN #{upname}"
-        puts
-        apl(data)
-        puts
-        puts "END #{upname}"
-        puts
-        puts "=========================================================="
-      end
-
-      def apl(data)
-        ap data, options = {
-          :indent => -2,
-          :index => false,
-          :color => {
-            :hash  => :pale,
-            :class => :white
-          }
-        }
+        ::Provisioner.apd(name, data)
       end
 
       def true_false_to_s(tf)
-        if tf
-          "true"
-        else
-          "false"
-        end
+        ::Provisioner.true_false_to_s(tf)
       end
 
     end

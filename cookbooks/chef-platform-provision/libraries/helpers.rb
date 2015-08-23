@@ -142,6 +142,7 @@ module Provisioner
 
   def self.apd(name, data)
     upname = name.upcase
+    puts
     puts "=========================================================="
     puts
     puts "BEGIN #{upname}"
@@ -162,6 +163,14 @@ module Provisioner
         :class => :white
       }
     }
+  end
+
+  def self.true_false_to_s(tf)
+    if tf
+      "true"
+    else
+      "false"
+    end
   end
 
   def self.log_test_if(name)
