@@ -6,10 +6,10 @@ end
 default['chef_platform']['chef_server'].tap do |chef_server|
   chef_server['topology'] = "tier"
   chef_server['version'] = :latest
-  chef_server['api_fqdn'] = node['fqdn']
+  chef_server['api_fqdn'] = "chef-server.chefplatform.local"
   chef_server['configuration'] = {
     "postgresql" => {
-      "max_connections" => 1500,
+      "max_connections" => 1501,
       "log_min_duration_statement" => 500
     },
     # "oc_id" => {
@@ -37,8 +37,17 @@ end
 
 default['chef_platform']['analytics'].tap do |analytics|
   analytics['version'] = :latest
-  analytics['api_fqdn'] = node['fqdn']
-  analytics['configuration'] = {}
+  analytics['api_fqdn'] = "analytics.chefplatform.local"
+  analytics['configuration'] = {
+    "actions_consumer" => {
+      "hipchat_api_token" => "4yZvEWO6gnVhjtl3F6aU12obylgNXzzqmklI5jP0",
+      "hipchat_enabled" => [
+        "prod",
+        "preprod"
+      ],
+      "hipchat_room" => 'Chef Notification'
+    }
+  }
 end
 
 default['chef_platform']['supermarket'].tap do |supermarket|

@@ -7,15 +7,6 @@
 module Provisioner
   class PlatformSpec
 
-    # x
-    #     def initialize(type, platform_data)
-    #       case type
-    #       when :new_resource
-    #         platform_data = 'new_resource'
-    #       when :current_resource
-    #         platform_data = 'current_resource'
-    #       else
-    #       end
 
     def initialize(platform_data)
       @platform_data = ::Provisioner.deep_hashify(platform_data)
@@ -23,14 +14,14 @@ module Provisioner
 
     attr_reader :platform_data
 
+    def platform_data=(data)
+      platform_data = data
+    end
+
     ###
     #
     # Driver Name and Machine Options
     #
-
-    def platform_data=(data)
-      platform_data = data
-    end
 
     def driver
       platform_data['driver']
@@ -66,7 +57,8 @@ module Provisioner
     # chef_server data
     #
     def chef_server
-      platform_data['chef_server'] ||= {}
+      platform_data['chef_server']
+      # platform_data['chef_server'] ||= {}
     end
 
     def chef_server_configuration
@@ -107,10 +99,11 @@ module Provisioner
     # analytics data
     #
     def analytics
-      platform_data['analytics'] ||= {}
+      platform_data['analytics']
     end
 
     def analytics_configuration
+      platform_data['analytics'] ||= {}
       analytics['configuration']
     end
 

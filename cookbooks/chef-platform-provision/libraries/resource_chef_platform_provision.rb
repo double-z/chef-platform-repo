@@ -30,12 +30,12 @@ class Chef
       self.resource_name = 'chef_platform_provision'
 
       def initialize(*args)
-      	puts "INITIALIZE"
-      	puts "INITIALIZE"
-      	puts "INITIALIZE"
-      	puts "INITIALIZE"
-      	puts "INITIALIZE"
-      	puts "INITIALIZE"
+      	# puts "INITIALIZE"
+      	# puts "INITIALIZE"
+      	# puts "INITIALIZE"
+      	# puts "INITIALIZE"
+      	# puts "INITIALIZE"
+      	# puts "INITIALIZE"
         args.each do |k|
           # raise "YUP" if !k.is_a?(ChefDK::ProvisioningData::Context)
           policy_group(k) if k.kind_of?(String)

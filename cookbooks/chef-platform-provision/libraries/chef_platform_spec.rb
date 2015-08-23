@@ -41,8 +41,7 @@ module Provisioner
     end
 
     def self.get_or_empty(new_config)
-    	config_hash = 
-      val = (self.get(config_hash['name'], chef_server) || self.new_entry(config_hash, chef_server))
+        val = (self.get(config_hash['name'], chef_server) || self.new_entry(config_hash, chef_server))
       val
     end
 
@@ -51,12 +50,14 @@ module Provisioner
       val = (self.get(policy_group) || self.new_entry(new_config_hash))
       # puts "config_name #{config_name}"
       # val = self.get(config_name)
+      # use_val = val.empty? ? val : strip_hash_nil(val)
       val
     end
 
     def self.new_spec(policy_group, new_config)
       # val = (self.get(policy_group) || self.new_entry(new_config))
-      val = self.new_entry(new_config)
+      use_new_config = strip_hash_nil(new_config)
+      val = self.new_entry(use_new_config)
       # puts "VAL: #{val}"
       val
     end
@@ -240,7 +241,7 @@ module Provisioner
     end
 
     def chef_server_config
-      self.platform_data['chef_server']['configuration']
+      self.platform_data['chef_server']['configuration'] rescue {}
     end
 
     ##
@@ -263,8 +264,12 @@ module Provisioner
       analytics_nodes[0]["node_name"] == server['node_name']
     end
 
+    def analytics_data
+      self.platform_data['analytics']
+    end
+
     def analytics_config
-      self.platform_data['analytics']['configuration']
+      self.platform_data['analytics']['configuration'] rescue {}
     end
 
     ##
@@ -284,7 +289,7 @@ module Provisioner
     end
 
     def is_supermarket?(server)
-      supermarket_nodes[0]["node_name"] == server['node_name']
+      supermarket_nodes[0]["node_name"] == server['node_name'] unless supermarket_nodes.empty?
     end
 
     def supermarket_config
@@ -520,8 +525,8 @@ module Provisioner
       _self = self
       _chef_server = _self.chef_server
       ChefMetal.inline_resource(action_handler) do
-        chef_data_bag_item _self.name do
-          data_bag 'platform'
+        chef_data_bag_item "chef_platform" do
+          data_bag 'prod'
           chef_server _chef_server
           action :delete
         end
@@ -541,8 +546,25 @@ module Provisioner
     #
     # Chef API object for the given Chef server
     #
-    def chef_api
+    def self.chef_api
       Cheffish.server_api_for(chef_server)
+    end
+
+    def self.strip_hash_nil(val)
+      vvv = case val
+      when Hash
+        cleaned_val = val.delete_if { |kk,vv| vv.nil? || (vv && vv.is_a?(String) && vv.empty?) }
+        cleaned_val.each do |k,v|
+          case v
+          when Hash
+            strip_hash_nil(v)
+          when Array
+            v.flatten!
+            v.uniq!
+          end
+        end
+      end
+      vvv
     end
 
     def self.strings_to_symbols(data)
