@@ -63,11 +63,11 @@
       "node_name": "backend1",
       "service": "chef_server",
       "fqdn": "backend1.ubuntu.vagrant",
-      "interface": "eth1",
+      "interface": "eth0",
       "machine_options_ipaddress": "33.33.33.20",
       "role": "backend",
       "bootstrap": true,
-      "ipaddress": "33.33.33.20"
+      "ipaddress": "10.0.2.15"
     },
     {
       "node_name": "frontend1",

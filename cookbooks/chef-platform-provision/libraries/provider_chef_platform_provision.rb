@@ -210,7 +210,7 @@ class Chef
       end
 
       def platform_policy_path
-        ::File.join(Chef::Config[:chef_repo_path], "policy", new_resource.policy_group)
+        ::File.join(Chef::Config[:chef_repo_path], "policies", new_resource.policy_group, "cache")
       end
 
       def local_analytics_rb_path
