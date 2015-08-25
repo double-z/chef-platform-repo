@@ -191,31 +191,11 @@ class Chef
           platform_data['analytics']['configuration'] = new_resource.analytics_configuration
           platform_data['nodes'] = []
           new_resource.nodes.each do |nd|
-          	# apd("node", nd)
-          	platform_data['nodes'] << nd
+            platform_data['nodes'] << nd
           end
- # new_resource.nodes
         else
-          platform_data = new_resource.platform_data
+          platform_data = ::Provisioner.deep_hashify(new_resource.platform_data)
         end
-
-        # configs = {
-        #   "platform_data" =>
-        #   [ :analytics_version,
-        #     :analytics_api_fqdn,
-        #     :analytics_configuration,
-        #     :chef_server_version,
-        #     :chef_server_api_fqdn,
-        #     :chef_server_topology,
-        #     :chef_server_configuration,
-        #     :nodes,
-        #     :driver_name
-        #   ].inject({}) do |result, key|
-        #     result[key.to_s] = new_resource.send(key)
-        #     result
-        #   end
-        # }
-        # apd("Config From Resource", platform_data)
         platform_data
       end
 
@@ -248,14 +228,10 @@ class Chef
       attr_reader :chef_server, :new_platform_spec, :current_platform_spec, :rollback_platform_spec
 
       def load_current_resource
-        #apd("Resource Init Time", new_resource.init_time)
-        @chef_server = new_resource.chef_server
         @current_platform_spec = Provisioner::ChefPlatformSpec.current_spec(new_resource.policy_group)
         @new_platform_spec = Provisioner::ChefPlatformSpec.new_spec(new_resource.policy_group,
-                                                                    ::Provisioner.deep_hashify(platform_data_for_new))
+                                                                    platform_data_for_new)
         new_platform_spec.nodes = all_ready_nodes if all_nodes_ready?
-        platform_data_for_new
-        # log_all_data if new_resource.log_all
       end
 
       def platform_policy_path

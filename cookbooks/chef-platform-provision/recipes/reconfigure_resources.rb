@@ -12,9 +12,9 @@ chef_platform_provision "prod" do
   chef_server_topology "tier"
   chef_server_version :latest
   chef_server_api_fqdn "chef-server.chefplatform.local"
-  chef_server_configuration({
+  chef_server_configuration({ 
       "postgresql" => {
-        "max_connections" => 1500,
+        "max_connections" => 1501,
         "log_min_duration_statement" => 500
       },
       "opscode_erchef" => {
