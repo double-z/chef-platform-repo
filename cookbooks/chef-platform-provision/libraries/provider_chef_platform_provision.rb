@@ -120,12 +120,15 @@ class Chef
       end
 
       action :reconfigure do
+        log_all_data if new_resource.log_all
+
         if should_run?
           if !all_nodes_ready?
             action_ready
           else
             action_generate_config
           end
+          log_all_data if new_resource.log_all
           @new_resource.updated_by_last_action(true)
         else
           @new_resource.updated_by_last_action(false)
@@ -200,13 +203,13 @@ class Chef
       attr_reader :chef_server, :new_platform_spec, :current_platform_spec, :rollback_platform_spec
 
       def load_current_resource
-        apd("Resource Init Time", new_resource.init_time)
+        #apd("Resource Init Time", new_resource.init_time)
         @chef_server = new_resource.chef_server
         @current_platform_spec = Provisioner::ChefPlatformSpec.current_spec(new_resource.policy_group)
         @new_platform_spec = Provisioner::ChefPlatformSpec.new_spec(new_resource.policy_group,
                                                                     ::Provisioner.deep_hashify(new_resource.platform_data))
         new_platform_spec.nodes = all_ready_nodes if all_nodes_ready?
-        log_all_data if new_resource.log_all
+        # log_all_data if new_resource.log_all
       end
 
       def platform_policy_path

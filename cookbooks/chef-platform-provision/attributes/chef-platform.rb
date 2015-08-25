@@ -1,6 +1,6 @@
 
 default['chef_platform']['driver'].tap do |driver|
-  driver['name'] = 'ssh'
+  driver['name'] = 'vagrant'
 end
 
 default['chef_platform']['chef_server'].tap do |chef_server|
@@ -9,7 +9,7 @@ default['chef_platform']['chef_server'].tap do |chef_server|
   chef_server['api_fqdn'] = "chef-server.chefplatform.local"
   chef_server['configuration'] = {
     "postgresql" => {
-      "max_connections" => 1500,
+      "max_connections" => 1501,
       "log_min_duration_statement" => 500
     },
     # "oc_id" => {
@@ -45,7 +45,7 @@ default['chef_platform']['analytics'].tap do |analytics|
         "prod",
         "preprod"
       ],
-      "hipchat_room" => 'Chef Notifications'
+      "hipchat_room" => 'Chef Notification'
     }
   }
 end
@@ -67,7 +67,7 @@ default['chef_platform']['nodes'] = [
     "node_name" => "backend1",
     "service" => "chef_server",
     "fqdn" =>"backend1.ubuntu.vagrant",
-    "interface" => "eth0",
+    "interface" => "eth1",
     "machine_options_ipaddress" => "33.33.33.20",
     "role" => "backend",
     "bootstrap" => true
