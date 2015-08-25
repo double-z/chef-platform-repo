@@ -9,7 +9,7 @@ default['chef_platform']['chef_server'].tap do |chef_server|
   chef_server['api_fqdn'] = "chef-server.chefplatform.local"
   chef_server['configuration'] = {
     "postgresql" => {
-      "max_connections" => 1500,
+      "max_connections" => 1502,
       "log_min_duration_statement" => 500
     },
     # "oc_id" => {

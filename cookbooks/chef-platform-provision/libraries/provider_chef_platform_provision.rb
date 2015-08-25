@@ -174,6 +174,51 @@ class Chef
         machine_ops
       end
 
+      def platform_data_for_new
+
+        if new_resource.from_resource_attrs
+          platform_data = {}
+          platform_data['driver'] = {}
+          platform_data['driver']['name'] = new_resource.driver_name
+          platform_data['chef_server'] = {}
+          platform_data['chef_server']['version'] = new_resource.chef_server_version
+          platform_data['chef_server']['topology'] = new_resource.chef_server_topology
+          platform_data['chef_server']['api_fqdn'] = new_resource.chef_server_api_fqdn
+          platform_data['chef_server']['configuration'] = new_resource.chef_server_configuration
+          platform_data['analytics'] = {}
+          platform_data['analytics']['version'] = new_resource.analytics_version
+          platform_data['analytics']['api_fqdn'] = new_resource.analytics_api_fqdn
+          platform_data['analytics']['configuration'] = new_resource.analytics_configuration
+          platform_data['nodes'] = []
+          new_resource.nodes.each do |nd|
+          	# apd("node", nd)
+          	platform_data['nodes'] << nd
+          end
+ # new_resource.nodes
+        else
+          platform_data = new_resource.platform_data
+        end
+
+        # configs = {
+        #   "platform_data" =>
+        #   [ :analytics_version,
+        #     :analytics_api_fqdn,
+        #     :analytics_configuration,
+        #     :chef_server_version,
+        #     :chef_server_api_fqdn,
+        #     :chef_server_topology,
+        #     :chef_server_configuration,
+        #     :nodes,
+        #     :driver_name
+        #   ].inject({}) do |result, key|
+        #     result[key.to_s] = new_resource.send(key)
+        #     result
+        #   end
+        # }
+        # apd("Config From Resource", platform_data)
+        platform_data
+      end
+
       def machine_options_for(server)
         configs = []
 
@@ -207,8 +252,9 @@ class Chef
         @chef_server = new_resource.chef_server
         @current_platform_spec = Provisioner::ChefPlatformSpec.current_spec(new_resource.policy_group)
         @new_platform_spec = Provisioner::ChefPlatformSpec.new_spec(new_resource.policy_group,
-                                                                    ::Provisioner.deep_hashify(new_resource.platform_data))
+                                                                    ::Provisioner.deep_hashify(platform_data_for_new))
         new_platform_spec.nodes = all_ready_nodes if all_nodes_ready?
+        platform_data_for_new
         # log_all_data if new_resource.log_all
       end
 
