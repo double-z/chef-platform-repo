@@ -87,6 +87,19 @@ class Chef
       attribute :log_all, :kind_of => [ TrueClass, FalseClass ], :default => false
       attribute :policy_group, :kind_of => String
 
+
+
+      attribute :from_resource_attrs
+      attribute :driver_name, :kind_of => String
+      attribute :chef_server_topology, :kind_of => String
+      attribute :chef_server_version, :kind_of => Symbol
+      attribute :chef_server_api_fqdn, :kind_of => String
+      attribute :chef_server_configuration, :kind_of => Hash
+      attribute :analytics_version, :kind_of => Symbol
+      attribute :analytics_api_fqdn, :kind_of => String
+      attribute :analytics_configuration, :kind_of => Hash
+      attribute :nodes, :kind_of => Array
+
     end
   end
 end

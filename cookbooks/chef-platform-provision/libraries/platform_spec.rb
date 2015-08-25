@@ -83,7 +83,7 @@ module Provisioner
     # end
 
     def nodes=(nodes_array)
-      platform_data['nodes'] ||= []
+      # platform_data['nodes'] ||= []
       platform_data['nodes'] = nodes_array
     end
 
