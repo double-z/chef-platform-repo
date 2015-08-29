@@ -6,15 +6,14 @@
 
 chef_platform_provision "prod" do
   action :reconfigure
-  from_resource_attrs true
   # platform_data node['chef_platform']
-  driver_name 'vagrant'
+  driver_name 'ssh'
   chef_server_topology "tier"
   chef_server_version :latest
   chef_server_api_fqdn "chef-server.chefplatform.local"
   chef_server_configuration({ 
       "postgresql" => {
-        "max_connections" => 1501,
+        "max_connections" => 1500,
         "log_min_duration_statement" => 500
       },
       "opscode_erchef" => {

@@ -2,21 +2,16 @@
 # Specification for a platform. Sufficient information to find and contact it
 # after it has been set up.
 #
-# class Chef
-#   module Provisioning
+
+class Chef
 module Provisioner
   class PlatformSpec
 
-
     def initialize(platform_data)
-      @platform_data = ::Provisioner.deep_hashify(platform_data)
+      @platform_data = platform_data
     end
 
     attr_reader :platform_data
-
-    def platform_data=(data)
-      platform_data = data
-    end
 
     ###
     #
@@ -35,30 +30,12 @@ module Provisioner
       driver['name'] = value
     end
 
-    def driver_machine_options
-      driver['machine_options'] ||= {}
-    end
-
-    def driver_machine_options=(value)
-      driver['machine_options'] = value
-    end
-
-    ###
-    #
-    # role_machine_options - Role Specific Opts, I.E frontends are m3.medium, BE m3.large
-    #
-
-    def machine_options
-      platform_data['machine_options']
-    end
-
     ###
     #
     # chef_server data
     #
     def chef_server
       platform_data['chef_server']
-      # platform_data['chef_server'] ||= {}
     end
 
     def chef_server_configuration
@@ -78,21 +55,9 @@ module Provisioner
       platform_data['nodes']
     end
 
-    # def node_test
-    #   platform_data['node_test']
-    # end
-
     def nodes=(nodes_array)
-      # platform_data['nodes'] ||= []
       platform_data['nodes'] = nodes_array
     end
-
-    # def node_data(server_name)
-    #   nodes[server_name]
-    # end
-
-    # def node_ip(server)
-    # end
 
     ###
     #
@@ -152,4 +117,5 @@ module Provisioner
     end
 
   end
+end
 end
