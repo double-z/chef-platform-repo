@@ -19,6 +19,10 @@ class Chef
       #    - destroy_all
 
       action :reconfigure do
+      	puts "shoudrun #{should_run?.to_s}"
+      	puts "allnodes #{all_nodes_ready?.to_s}"
+      	puts "condif #{config_updated?.to_s}"
+
         if should_run?
           if !all_nodes_ready?
             action_ready
@@ -37,7 +41,7 @@ class Chef
           action :nothing
           new_platform_spec.all_nodes.each do |server|
             machine server['fqdn'] do
-              driver current_platform_spec.driver_name
+              driver new_platform_spec.driver_name
               machine_options machine_opts_for(server)
               converge true
             end
@@ -60,12 +64,24 @@ class Chef
       # called by reconfigure action
       action :ready do
 
-        d = directory platform_policy_path do
+        dg = directory platform_policy_group_cache_path do
           mode '0755'
           action :nothing
           recursive true
         end
-        d.run_action(:create) unless ::File.exists?(platform_policy_path)
+        dcs = directory local_chef_server_cache_path do
+          mode '0755'
+          action :nothing
+          recursive true
+        end
+        da = directory local_analytics_cache_path do
+          mode '0755'
+          action :nothing
+          recursive true
+        end
+        dg.run_action(:create) unless ::File.exists?(platform_policy_group_cache_path)
+        dcs.run_action(:create) unless ::File.exists?(local_chef_server_cache_path)
+        da.run_action(:create) unless ::File.exists?(local_analytics_cache_path)
 
         b = machine_batch 'machine_batch_ready_all' do
           action :nothing
@@ -106,13 +122,42 @@ class Chef
             new_platform_spec.save(action_handler)
           end
           action :nothing unless b.updated_by_last_action?
-          notifies :_test_ready, "chef_platform_provision[prod]", :immediately
+          notifies :_setup, "chef_platform_provision[prod]", :immediately
         end
       end
 
       # will only be accessible when notified by ready
-      action :_test_ready do
-        ruby_block 'run_test_ready' do
+      action :_setup do
+        hostsfile_template.run_action(:create)
+
+        new_platform_spec.all_nodes.each do |server|
+          machine_file "/etc/hosts" do
+            local_path local_hostsfile_path
+            machine server['fqdn']
+            action :upload
+            # action :upload if hostsfile_template.updated_by_last_action?
+            # action :nothing if !hostsfile_template.updated_by_last_action?
+          end
+        end
+
+        machine_batch 'do_setup' do
+          action :converge
+          new_platform_spec.all_nodes.each do |server|
+            machine server['fqdn'] do
+              attribute 'platform_action', "setup"
+              attribute 'platform_node', server
+              recipe "platform-node::default"
+              driver new_platform_spec.driver_name
+              machine_options machine_opts_for(server)
+            end
+          end
+          notifies :_test_setup, "chef_platform_provision[prod]", :immediately
+        end
+      end
+
+      # will only be accessible when notified by ready
+      action :_test_setup do
+        ruby_block 'run_test_setup' do
           block do
             # Do Sanity Check/Validation etc. here
             # i.e:
@@ -145,29 +190,53 @@ class Chef
 
       # will only be accessible when notified by generate_config
       action :_push_config do
-        machine_batch 'do_push_config' do
-          action :converge
-          new_platform_spec.all_nodes.each do |server|
-            machine server['fqdn'] do
-              driver new_platform_spec.driver_name
-              machine_options machine_opts_for(server)
-              files(
-                '/var/chef/cache/templates.d/chef-server.rb.erb' => local_chef_server_rb_path,
-                '/var/chef/cache/templates.d/analytics.rb.erb' => local_analytics_rb_path
-              )
+        ruby_block 'do_push_boostrap_files' do
+          block do
+
+            new_platform_spec.all_nodes.each do |server|
+              machine_file "/var/chef/cache/platform/chef-server.rb.erb" do
+                local_path local_chef_server_rb_path
+                machine server['fqdn']
+                action :upload
+              end
+
+              if with_analytics?
+                machine_file '/var/chef/cache/platform/analytics.rb.erb' do
+                  local_path local_analytics_rb_path
+                  machine server['fqdn']
+                  action :upload
+                end
+              end
             end
+
           end
+          # action :nothing #if standalone_server_only || !rbm.updated_by_last_action?
           notifies :_run_bootstrap, "chef_platform_provision[prod]", :immediately
         end
+        # machine_batch 'do_push_config' do
+        #   action :converge
+        #   new_platform_spec.all_nodes.each do |server|
+        #     machine server['fqdn'] do
+        #       driver new_platform_spec.driver_name
+        #       machine_options machine_opts_for(server)
+        #       files(
+        #         '/var/chef/cache/platform/chef-server.rb.erb' => local_chef_server_rb_path,
+        #         '/var/chef/cache/platform/analytics.rb.erb' => local_analytics_rb_path
+        #       )
+        #     end
+        #   end
+        #   notifies :_run_bootstrap, "chef_platform_provision[prod]", :immediately
+        # end
       end
 
       action :_run_bootstrap do
         rbm = machine new_platform_spec.chef_server_bootstrap_backend['fqdn'] do
           driver new_platform_spec.driver_name
+          attribute 'platform_node', new_platform_spec.chef_server_bootstrap_backend
           recipe "platform-node::server"
           action :nothing
           machine_options machine_opts_for(new_platform_spec.chef_server_bootstrap_backend)
-          converge true
+          # converge true
         end
 
         rbm.run_action(:converge)
@@ -175,31 +244,63 @@ class Chef
         ruby_block 'notify_reconfigure_all_non_bootstrap' do
           block do
 
-            # chef_server_files.each do |server_file|
-            #   machine_file "/etc/opscode/#{server_file}" do
-            #     local_path "#{platform_policy_path}/#{server_file}"
-            #     machine new_platform_spec.chef_server_bootstrap_backend['fqdn']
-            #     action :download
-            #   end
-            # end
+            chef_server_files.each do |server_file|
+              machine_file "/etc/opscode/#{server_file}" do
+                local_path "#{local_chef_server_cache_path}/#{server_file}"
+                machine new_platform_spec.chef_server_bootstrap_backend['fqdn']
+                action :download
+              end
+            end
 
-            # if with_analytics?
-            #   analytics_files.each do |analytics_file|
-            #     machine_file "/etc/opscode-analytics/#{analytics_file}" do
-            #       local_path "#{platform_policy_path}/#{analytics_file}"
-            #       machine new_platform_spec.chef_server_bootstrap_backend['fqdn']
-            #       action :download
-            #     end
-            #   end
-            # end
+            if with_analytics?
+              analytics_files.each do |analytics_file|
+                machine_file "/etc/opscode-analytics/#{analytics_file}" do
+                  local_path "#{local_analytics_cache_path}/#{analytics_file}"
+                  machine new_platform_spec.chef_server_bootstrap_backend['fqdn']
+                  action :download
+                end
+              end
+            end
 
           end
           # action :nothing #if standalone_server_only || !rbm.updated_by_last_action?
           action :nothing unless rbm.updated_by_last_action?
-          notifies :_reconfigure_all_non_bootstrap, "chef_platform_provision[prod]", :immediately
+          notifies :_push_boostrap_files, "chef_platform_provision[prod]", :immediately
         end
 
       end
+
+      action :_push_boostrap_files do
+        ruby_block 'do_push_boostrap_files' do
+          block do
+
+            new_platform_spec.all_nodes.each do |server|
+              chef_server_files.each do |server_file|
+                machine_file "/etc/opscode/#{server_file}" do
+                  local_path "#{local_chef_server_cache_path}/#{server_file}"
+                  machine server['fqdn']
+                  action :upload
+                end
+              end
+
+              if with_analytics?
+                analytics_files.each do |analytics_file|
+                  machine_file "/etc/opscode-analytics/#{analytics_file}" do
+                    local_path "#{local_analytics_cache_path}/#{analytics_file}"
+                    machine server['fqdn']
+                    action :upload
+                  end
+                end
+              end
+            end
+
+          end
+          # action :nothing #if standalone_server_only || !rbm.updated_by_last_action?
+          # notifies :_reconfigure_all_non_bootstrap, "chef_platform_provision[prod]", :immediately
+        end
+      end
+
+
 
       # will only be accessible when notified by _run_bootstrap
       action :_reconfigure_all_non_bootstrap do
@@ -208,14 +309,12 @@ class Chef
           new_platform_spec.all_nodes.each do |server|
             next if current_platform_spec.is_bootstrap_backend?(server)
             machine server['fqdn'] do
+              attribute 'platform_node', server
+              recipe "platform-node::server" if run_server_recipe?(server)
+              recipe "platform-node::analytics" if run_analytics_recipe?(server)
               driver current_platform_spec.driver_name
               machine_options machine_opts_for(server)
               converge true
-              # files(
-              #   # Finish Me
-              #   chef_server_files
-              #   analytics_files
-              # )
             end
           end
         end
@@ -232,6 +331,9 @@ class Chef
         @new_platform_spec = Chef::Provisioner::ChefPlatformSpec.new_spec(policy_group,
                                                                           new_platform_data)
         new_platform_spec.nodes = all_ready_nodes if all_nodes_ready?
+        new_platform_spec.all_nodes.each do |server|
+          puts "NODE CLASS #{server.class}"
+        end
         # puts new_platform_spec.get
       end
 
@@ -243,7 +345,6 @@ class Chef
         platform_data['chef_server'] = {}
         platform_data['analytics'] = {}
         platform_data['nodes'] = []
-        # if !new_resource.action == :destroy_all
         platform_data['driver']['name'] = new_resource.driver_name
         platform_data['chef_server']['version'] = new_resource.chef_server_version
         platform_data['chef_server']['topology'] = new_resource.chef_server_topology
@@ -253,7 +354,6 @@ class Chef
         platform_data['analytics']['api_fqdn'] = new_resource.analytics_api_fqdn
         platform_data['analytics']['configuration'] = new_resource.analytics_configuration
         platform_data['nodes'] = new_resource.nodes
-        # end
         platform_data
       end
 
@@ -285,19 +385,41 @@ class Chef
         machine_opts
       end
 
+      def run_analytics_recipe?(server)
+        val = (server['service'] == "analytics") || false
+        val
+      end
+
+      def run_chef_server_recipe?(server)
+        val = (server['service'] == "chef-server") || false
+        val
+      end
+
       ##
       # Paths
 
-      def platform_policy_path
+      def platform_policy_group_cache_path
         ::File.join(Chef::Config[:chef_repo_path], "policies", policy_group, "cache")
       end
 
+      def local_analytics_cache_path
+        ::File.join(platform_policy_group_cache_path, "opscode-analytics")
+      end
+
+      def local_chef_server_cache_path
+        ::File.join(platform_policy_group_cache_path, "opscode")
+      end
+
       def local_analytics_rb_path
-        ::File.join(platform_policy_path, "analytics.rb")
+        ::File.join(local_analytics_cache_path, "analytics.rb")
       end
 
       def local_chef_server_rb_path
-        ::File.join(platform_policy_path, "chef-server.rb")
+        ::File.join(local_chef_server_cache_path, "chef-server.rb")
+      end
+
+      def local_hostsfile_path
+        ::File.join(platform_policy_group_cache_path, "hostsfile")
       end
 
       def chef_server_files
@@ -305,11 +427,24 @@ class Chef
       end
 
       def analytics_files
-        %w(pivotal.pem webui_pub.pem private-chef-secrets.json webui_priv.pem)
+        %w(actions-source.json webui_priv.pem)
       end
 
       ##
       # Template Resources
+
+      def hostsfile_template
+        @hostsfile_template ||= begin
+          ht = Chef::Resource::Template.new(local_hostsfile_path, run_context)
+          ht.source("hostsfile.erb")
+          ht.mode("0644")
+          ht.cookbook("chef-platform-provision")
+          ht.variables(
+            :nodes => new_platform_spec.nodes
+          )
+          ht
+        end
+      end
 
       def analytics_rb_template
         @analytics_rb_template ||= begin
@@ -364,6 +499,10 @@ class Chef
         end
       end
 
+      def with_analytics?
+        true
+      end
+
       ##
       # Returns all ready nodes
 
@@ -379,9 +518,10 @@ class Chef
         if !::File.exists?(local_chef_server_rb_path)
           true
         else
-          current_hash = current_platform_spec.chef_server_config
-          new_hash = new_platform_spec.chef_server_config
+          current_hash = current_platform_spec.chef_server_data
+          new_hash = new_platform_spec.chef_server_data
           val = current_hash.eql?(new_hash)
+          puts "val #{val.to_s}"
           ret_val = val ? false : true
           ret_val
         end
@@ -391,25 +531,26 @@ class Chef
         if !::File.exists?(local_analytics_rb_path)
           true
         else
-          current_hash = current_platform_spec.analytics_configuration
-          new_hash = new_platform_spec.analytics_configuration
+          current_hash = current_platform_spec.analytics_data
+          new_hash = new_platform_spec.analytics_data
           val = current_hash.eql?(new_hash)
+          puts "val #{val.to_s}"
           ret_val = val ? false : true
           ret_val
         end
       end
 
       def supermarket_config_updated?
-        current_hash = current_platform_spec.supermarket_config
-        new_hash = new_platform_spec.supermarket_config
+        current_hash = current_platform_spec.supermarket_data
+        new_hash = new_platform_spec.supermarket_data
         val = current_hash.eql?(new_hash)
         ret_val = val ? false : true
         ret_val
       end
 
       def delivery_config_updated?
-        current_hash = current_platform_spec.delivery_config
-        new_hash = new_platform_spec.delivery_config
+        current_hash = current_platform_spec.delivery_data
+        new_hash = new_platform_spec.delivery_data
         val = current_hash.eql?(new_hash)
         ret_val = val ? false : true
         ret_val
