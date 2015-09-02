@@ -6,14 +6,13 @@
 
 chef_platform_provision "prod" do
   action :reconfigure
-  # platform_data node['chef_platform']
   driver_name 'ssh'
   chef_server_topology "tier"
   chef_server_version :latest
-  chef_server_api_fqdn "frontend1.ubuntu.vagrant"
+  chef_server_api_fqdn "frontend1.chef-platform.local"
   chef_server_configuration({ 
       "postgresql" => {
-        "max_connections" => 500,
+        "max_connections" => 301,
         "log_min_duration_statement" => 500
       },
       "opscode_erchef" => {
@@ -49,7 +48,7 @@ chef_platform_provision "prod" do
       {
         "node_name" => "backend1",
         "service" => "chef_server",
-        "fqdn" =>"backend1.ubuntu.vagrant",
+        "fqdn" =>"backend1.chef-platform.local",
         "interface" => "eth1",
         "machine_options_ipaddress" => "33.33.33.20",
         "role" => "backend",
@@ -58,7 +57,7 @@ chef_platform_provision "prod" do
       {
         "node_name" => "frontend1",
         "service" => "chef_server",
-        "fqdn" => "frontend1.ubuntu.vagrant",
+        "fqdn" => "frontend1.chef-platform.local",
         "interface" => "eth1",
         "machine_options_ipaddress" => "33.33.33.22",
         "role" => "frontend",
@@ -67,7 +66,7 @@ chef_platform_provision "prod" do
       {
         "node_name" => "analytics1",
         "service" => "analytics",
-        "fqdn" => "analytics.ubuntu.vagrant",
+        "fqdn" => "analytics.chef-platform.local",
         "interface" => "eth1",
         "machine_options_ipaddress" => "33.33.33.25",
         "role" => "analytics",
