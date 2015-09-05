@@ -9,6 +9,13 @@ platform_node = node['platform_node']
 node_name = platform_node['fqdn']
 node_service = platform_node['service'].gsub("_","-")
 
+node['chef_platform']['nodes'].each do |node_data|
+  hostsfile_entry node_data['ipaddress'] do
+    hostname node_data['fqdn']
+    unique true
+  end
+end
+
 service 'hostname' do
   action :nothing
 end
