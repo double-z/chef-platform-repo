@@ -8,8 +8,8 @@ class Chef
         def self.generate_config(server)
           local_provisioner_options = {
             :vagrant_options => {
-              'vm.box' => "opscode-ubuntu-12.04" # ,
-              # 'vm.box_url' => attr['harness']['vagrant']['box_url']
+              'vm.box' => "opscode-ubuntu-12.04",
+              'vm.box_url' => "http://opscode-vm-bento.s3.amazonaws.com/vagrant/virtualbox/opscode_ubuntu-12.04_chef-provisionerless.box"
             },
             :vagrant_config => generate_vagrant_config(server)
           }
@@ -27,12 +27,12 @@ class Chef
 
           vagrant_config = <<-ENDCONFIG
           config.vm.network 'private_network', ip: "#{server['machine_options_ipaddress']}"
-          config.vm.hostname = "#{server['node_name']}"
+          config.vm.hostname = "#{server['fqdn']}"
           config.vm.provider 'virtualbox' do |v|
             v.customize [
               'modifyvm', :id,
-              '--name', "#{server['node_name']}",
-              '--memory', "256",
+              '--name', "#{server['fqdn']}",
+              '--memory', "1024",
               '--cpus', "1",
               '--natdnshostresolver1', 'on',
               '--usb', 'off',

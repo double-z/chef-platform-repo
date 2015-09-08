@@ -47,7 +47,7 @@ class Chef
         ChefPlatformSpec.new(platform_data)
       end
 
-      def get
+      def get_data
         begin
           if self.platform_data
             self.platform_data
@@ -66,6 +66,18 @@ class Chef
             self.platform_data['nodes']
           end
         rescue
+        end
+      end
+
+      def all_non_bootstrap_nodes
+        @all_non_bootstrap_nodes ||= begin
+          all_servers = []
+          if self.platform_data && self.platform_data['nodes']
+            self.platform_data['nodes'].each do |node_data|
+              all_servers << node_data unless (node_data['bootstrap'] == true)
+            end
+            all_servers
+          end
         end
       end
 
