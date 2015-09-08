@@ -16,7 +16,7 @@ execute 'analytics_reconfigure' do
   action :nothing
 end
 
-template '/etc/opscode-analytics/analytics.rb' do
+template '/etc/opscode-analytics/opscode-analytics.rb' do
   local true
   source "/var/chef/cache/platform/analytics.rb.erb"
   notifies :run, 'execute[analytics_reconfigure]', :immediately

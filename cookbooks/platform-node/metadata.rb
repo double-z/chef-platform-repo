@@ -7,3 +7,4 @@ long_description 'Installs/Configures platform-node'
 version '0.1.0'
 
 depends "chef-ingredient"
+depends "hostsfile"

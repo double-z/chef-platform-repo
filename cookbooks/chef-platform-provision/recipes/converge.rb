@@ -12,7 +12,7 @@ chef_platform_provision "prod" do
   chef_server_api_fqdn "frontend1.chef-platform.local"
   chef_server_configuration({ 
       "postgresql" => {
-        "max_connections" => 301,
+        "max_connections" => 3011,
         "log_min_duration_statement" => 500
       },
       "opscode_erchef" => {
@@ -33,7 +33,7 @@ chef_platform_provision "prod" do
       }
     })
   analytics_version :latest
-  analytics_api_fqdn "analytics.chefplatform.local"
+  analytics_api_fqdn "analytics.chef-platform.local"
   analytics_configuration({
       "actions_consumer" => {
         "hipchat_api_token" => "4yZvEWO6gnVhjtl3F6aU12obylgNXzzqmklI5jP0",
@@ -41,7 +41,7 @@ chef_platform_provision "prod" do
           "prod",
           "preprod"
         ],
-        "hipchat_room" => 'Chef Notification'
+        "hipchat_room" => 'Chef Notifications'
       }
     })
   nodes([

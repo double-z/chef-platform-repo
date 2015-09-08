@@ -47,7 +47,7 @@ class Chef
         ChefPlatformSpec.new(platform_data)
       end
 
-      def get
+      def get_data
         begin
           if self.platform_data
             self.platform_data
