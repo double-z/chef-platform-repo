@@ -6,5 +6,5 @@
 
 chef_platform_provision "prod" do
   action :destroy_all
-  platform_data node['chef_platform']
+  driver_name 'vagrant'
 end

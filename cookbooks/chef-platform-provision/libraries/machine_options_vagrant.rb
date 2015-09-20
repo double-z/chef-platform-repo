@@ -32,7 +32,7 @@ class Chef
             v.customize [
               'modifyvm', :id,
               '--name', "#{server['fqdn']}",
-              '--memory', "1024",
+              '--memory', "2048",
               '--cpus', "1",
               '--natdnshostresolver1', 'on',
               '--usb', 'off',
