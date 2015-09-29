@@ -2,6 +2,7 @@ require 'cheffish'
 require 'chef/provisioning'
 require 'chef/provider/lwrp_base'
 require 'chef/provider/chef_node'
+# require_relative 'helpers_paths'
 
 class Chef
   class Provider
@@ -71,23 +72,20 @@ class Chef
 
       # PRIVATE ACTION: reconfigure_bootstrap
       action :reconfigure_bootstrap do
-        action_allocate
         action_ready unless all_nodes_ready?
         chef_server_rb_template.run_action(:create)
         analytics_rb_template.run_action(:create) if with_analytics?
-        if (chef_server_rb_template.updated_by_last_action? || analytics_rb_template.updated_by_last_action?)
-          upload_platform_conf
-          bootstrap_machine.run_action(:converge)
-          if (bootstrap_machine.updated_by_last_action? && !chef_server_standalone_only?)
-            download_chef_server_files
-            upload_chef_server_files
-            if with_analytics?
-              download_analytics_files
-              upload_analytics_files
-            end
+        upload_platform_conf
+        bootstrap_machine.run_action(:converge)
+        if (bootstrap_machine.updated_by_last_action? && !chef_server_standalone_only?)
+          download_chef_server_files
+          upload_chef_server_files
+          if with_analytics?
+            download_analytics_files
+            upload_analytics_files
           end
-          new_platform_spec.save(action_handler) if chef_server_standalone_only?
         end
+        new_platform_spec.save(action_handler) if chef_server_standalone_only?
         bootstrap_machine.updated_by_last_action?
       end
 
@@ -120,21 +118,21 @@ class Chef
       ##
       # New Platform Data
       def new_platform_data
-        platform_data = {}
-        platform_data['driver'] = {}
-        platform_data['chef_server'] = {}
-        platform_data['analytics'] = {}
-        platform_data['nodes'] = []
-        platform_data['driver']['name'] = new_resource.driver_name
-        platform_data['chef_server']['version'] = new_resource.chef_server_version
-        platform_data['chef_server']['topology'] = new_resource.chef_server_topology
-        platform_data['chef_server']['api_fqdn'] = new_resource.chef_server_api_fqdn
-        platform_data['chef_server']['configuration'] = new_resource.chef_server_configuration
-        platform_data['analytics']['version'] = new_resource.analytics_version
-        platform_data['analytics']['api_fqdn'] = new_resource.analytics_api_fqdn
-        platform_data['analytics']['configuration'] = new_resource.analytics_configuration
-        platform_data['nodes'] = new_resource.nodes
-        platform_data
+        data = {}
+        data['driver'] = {}
+        data['chef_server'] = {}
+        data['analytics'] = {}
+        data['nodes'] = []
+        data['driver']['name'] = new_resource.driver_name
+        data['chef_server']['version'] = new_resource.chef_server_version
+        data['chef_server']['topology'] = new_resource.chef_server_topology
+        data['chef_server']['api_fqdn'] = new_resource.chef_server_api_fqdn
+        data['chef_server']['configuration'] = new_resource.chef_server_configuration
+        data['analytics']['version'] = new_resource.analytics_version
+        data['analytics']['api_fqdn'] = new_resource.analytics_api_fqdn
+        data['analytics']['configuration'] = new_resource.analytics_configuration
+        data['nodes'] = new_resource.nodes
+        data
       end
 
       ##
@@ -156,20 +154,21 @@ class Chef
       end
 
       def vagrant_machine_opts_for(server)
-        machine_opts = Chef::Provisioner::MachineOptions::Vagrant.generate_config(server)
-        machine_opts
+        m = Chef::Provisioner::MachineOptions::Vagrant.generate_config(server)
+        m
       end
 
       def ssh_machine_opts_for(server)
-        machine_opts = Chef::Provisioner::MachineOptions::Ssh.generate_config(server)
-        machine_opts
+        m = Chef::Provisioner::MachineOptions::Ssh.generate_config(server)
+        m
       end
 
       ##
       # Paths
 
       def platform_policy_group_cache_path
-        ::File.join(Chef::Config[:chef_repo_path], "policies", policy_group, "cache")
+        ::File.join(Chef::Config[:chef_repo_path],
+                    "policies", policy_group, "cache")
       end
 
       def remote_cache_path
@@ -231,7 +230,8 @@ class Chef
 
       def analytics_rb_template
         @analytics_rb_template ||= begin
-          arbt = ::Chef::Resource::Template.new(local_analytics_rb_path, run_context)
+          arbt = ::Chef::Resource::Template.new(local_analytics_rb_path,
+                                                run_context)
           arbt.source("analytics.rb.erb")
           arbt.mode("0644")
           arbt.cookbook("chef-platform-provision")
@@ -245,7 +245,8 @@ class Chef
 
       def chef_server_rb_template
         @chef_server_rb_template ||= begin
-          csrt = ::Chef::Resource::Template.new(local_chef_server_rb_path, run_context)
+          csrt = ::Chef::Resource::Template.new(local_chef_server_rb_path,
+                                                run_context)
           csrt.source("chef-server.rb.erb")
           csrt.mode("0644")
           csrt.cookbook("chef-platform-provision")

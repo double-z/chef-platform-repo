@@ -5,29 +5,6 @@
 # Copyright (c) 2015 The Authors, All Rights Reserved.
 
 
-if node['platform_node']
-  puts "node['platform_node']"
-  puts "node['platform_node']"
-  puts "node['platform_node']"
-  puts "node['platform_node']"
-  puts "node['platform_node']"
-  puts node['platform_node']
-  puts "node['platform_node']"
-  puts "node['platform_node']"
-  puts "node['platform_node']"
-  puts "node['platform_node']"
-  puts "node['platform_node']"
-  puts "node['platform_node']"
-  puts "node['platform_node']"
-else
-  puts "NOPE"
-  puts "NOPE"
-  puts "NOPE"
-  puts "NOPE"
-  puts "NOPE"
-  puts "NOPE"
-end
-
 first_run_lock = ::File.exists?('/etc/chef/firstrun.lock')
 
 if !first_run_lock

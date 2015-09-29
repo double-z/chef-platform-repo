@@ -19,5 +19,6 @@ end
 template '/etc/opscode-analytics/opscode-analytics.rb' do
   local true
   source "/var/chef/cache/platform/analytics.rb.erb"
-  notifies :run, 'execute[analytics_reconfigure]', :immediately
+  # notifies :run, 'execute[analytics_reconfigure]', :immediately
+  notifies :reconfigure, 'chef_ingredient[analytics]'
 end
